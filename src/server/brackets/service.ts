@@ -18,6 +18,7 @@ import {
   matches,
   registrationEntries,
   registrations,
+  tournaments,
 } from '@/db/schema';
 import { AppError, notFound } from '../shared/errors';
 import { requireTournament } from '../tournaments/service';
@@ -393,6 +394,8 @@ export async function recordResult(actor: Actor, raw: unknown) {
     results.set(m.id, v.winnerEntryId);
     await tx.update(matches).set({ status: 'finished', winnerEntryId: v.winnerEntryId }).where(eq(matches.id, m.id));
     await recompute(tx, bracket, results);
+    // Trận đầu tiên có kết quả → giải chuyển sang "đang thi đấu" (khán giả thấy link trực tiếp)
+    await tx.update(tournaments).set({ status: 'ongoing' }).where(and(eq(tournaments.id, category.tournamentId), eq(tournaments.status, 'published')));
     await tx.insert(auditLogs).values({
       tournamentId: category.tournamentId, ...actorCols(actor), entity: 'match', entityId: m.id, action: 'result.set',
       before: { winner: m.winnerEntryId, status: m.status }, after: { winner: v.winnerEntryId },

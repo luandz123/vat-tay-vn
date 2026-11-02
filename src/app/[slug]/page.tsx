@@ -107,7 +107,11 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
             Chia sẻ
           </a>
         </div>
-        <p className="text-sm text-muted">Không cần tài khoản · Thanh toán VietQR về thẳng BTC</p>
+        {t.status === 'ongoing' || t.status === 'finished' ? (
+          <Link href={`/${t.slug}/truc-tiep`} className="font-semibold text-brand-text">Xem bảng đấu &amp; kết quả trực tiếp →</Link>
+        ) : (
+          <p className="text-sm text-muted">Không cần tài khoản · Thanh toán VietQR về thẳng BTC</p>
+        )}
       </section>
 
       <section className="grid grid-cols-2 gap-px border-y border-line bg-line">

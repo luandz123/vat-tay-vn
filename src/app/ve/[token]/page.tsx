@@ -5,6 +5,8 @@ import { FinanceSummary, NoticeBanner } from '@/components/public-extras';
 import { Logo } from '@/components/ui';
 import { getPublicFinance } from '@/server/finance/service';
 import { getLatestBanner } from '@/server/notifications/service';
+import { LiveRefresh } from '@/components/live-refresh';
+import { getMyMatches } from '@/server/brackets/public';
 import { vietQrPayload } from '@/server/payments/vietqr';
 import { formatPhone } from '@/server/registration/rules';
 import { getTicket } from '@/server/registration/service';
@@ -32,7 +34,8 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
   const remaining = Math.max(0, r.amountDue - r.amountPaid);
   const canPay = remaining > 0 && bank.bin && bank.accountNo && r.status !== 'cancelled';
   const pay = PAY[r.paymentStatus]!;
-  const [banner, finance] = await Promise.all([getLatestBanner(t.id), getPublicFinance(t.id, true)]);
+  const [banner, finance, myMatches] = await Promise.all([getLatestBanner(t.id), getPublicFinance(t.id, true), getMyMatches(r.id, t.id)]);
+  const STATUS: Record<string, string> = { in_progress: 'Đang đấu', on_table: 'Đã lên bàn', ready: 'Chờ gán bàn', pending: 'Chờ trận trước', done: 'Đã xong', none: 'Chưa xếp bảng' };
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col pb-10">
@@ -106,6 +109,44 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
         </div>
       </section>
       <p className="px-4 pt-3 text-center text-sm text-muted">Đưa mã này cho bàn cân để check-in. Nên chụp màn hình phòng khi mất mạng.</p>
+
+      {myMatches.length > 0 && (
+        <section className="flex flex-col gap-3 px-4 pt-7">
+          <LiveRefresh tournamentId={t.id} intervalMs={20000} />
+          <h2 className="display text-2xl text-brand-text">Trận tiếp theo của tôi</h2>
+          {myMatches.map((mm) => (
+            <div key={mm.categoryLabel + mm.hand} className="flex flex-col gap-3 border-2 border-brand bg-surface p-4">
+              <div className="flex items-center justify-between">
+                <span className="display btn-slant bg-brand px-2.5 py-0.5 text-white">{mm.tableName ?? STATUS[mm.status]}</span>
+                <span className="text-sm text-fg-2">{HAND_LABEL[mm.hand]} {mm.categoryLabel}{mm.matchNumber ? ` · Trận ${mm.matchNumber}` : ''}</span>
+              </div>
+              {mm.status !== 'done' && mm.status !== 'none' && (
+                <>
+                  <div className="text-lg">
+                    vs <strong>{mm.opponent ?? 'chờ xác định'}</strong>
+                  </div>
+                  {mm.aheadOnTable !== null && (
+                    <div className="text-sm text-warning-text">{mm.aheadOnTable === 0 ? 'Đến lượt bạn! Hãy có mặt ở bàn ngay.' : `Còn ${mm.aheadOnTable} trận trước bạn trên bàn này.`}</div>
+                  )}
+                </>
+              )}
+              {mm.path.length > 0 && (
+                <div className="flex flex-col gap-1 text-sm">
+                  {mm.path.map((p) => (
+                    <div key={p.label} className="flex justify-between">
+                      <span>{p.label} · {p.opponent ?? '…'}</span>
+                      <span className={p.result === 'won' ? 'text-success-text' : p.result === 'lost' ? 'text-[#ff7a7f]' : 'text-muted'}>
+                        {p.result === 'won' ? 'Thắng' : p.result === 'lost' ? 'Thua' : 'Sắp đấu'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          <Link href={`/${t.slug}/truc-tiep`} className="text-center text-sm font-semibold text-brand-text">Xem toàn bộ bảng đấu trực tiếp →</Link>
+        </section>
+      )}
 
       <FinanceSummary data={finance} />
 
