@@ -26,7 +26,8 @@ const kgStr = (v: number | null) => (v === null ? null : v.toFixed(2));
 
 /* ───────────── Quyền ───────────── */
 
-async function requireTournament(userId: string, tournamentId: string) {
+/** Giải mà người dùng có quyền (thành viên BTC). Ném NOT_FOUND/FORBIDDEN. */
+export async function requireTournament(userId: string, tournamentId: string) {
   if (!UUID_RE.test(tournamentId)) throw notFound('Không tìm thấy giải');
   const t = await db.query.tournaments.findFirst({ where: eq(tournaments.id, tournamentId) });
   if (!t) throw notFound('Không tìm thấy giải');
