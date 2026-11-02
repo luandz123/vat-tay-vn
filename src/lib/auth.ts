@@ -42,12 +42,15 @@ export async function getCurrentUser(): Promise<AppUser | null> {
   const existing = await db.query.users.findFirst({ where: eq(users.authSubject, authUser.id) });
   if (existing) return existing;
 
+  // ADMIN_EMAILS (phân tách bằng dấu phẩy): tài khoản tự thành admin nền tảng ở lần đăng nhập đầu
+  const admins = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
   const [created] = await db
     .insert(users)
     .values({
       authSubject: authUser.id,
       email: authUser.email ?? null,
       fullName: (authUser.user_metadata?.full_name as string | undefined) ?? null,
+      role: authUser.email && admins.includes(authUser.email.toLowerCase()) ? 'admin' : 'user',
     })
     .onConflictDoNothing({ target: users.authSubject })
     .returning();
