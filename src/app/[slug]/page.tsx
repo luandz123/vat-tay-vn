@@ -2,7 +2,10 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
+import { FinanceSummary, NoticeBanner } from '@/components/public-extras';
 import { ShareTools } from '@/components/share-tools';
+import { getPublicFinance } from '@/server/finance/service';
+import { getLatestBanner } from '@/server/notifications/service';
 import { Logo } from '@/components/ui';
 import { publicUrl } from '@/lib/storage';
 import { formatDateTime, formatDayDate, formatTime, formatVnd } from '@/server/shared/time';
@@ -60,6 +63,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
     ? buildSharePost({ name: t.name, startsAt: t.startsAt, venueName: t.venueName, venueAddress: t.venueAddress, registrationDeadline: t.registrationDeadline, url, categories: d.categories, priceTiers: d.priceTiers, prizes: d.prizes, contactPhone: c.phone ?? null })
     : null;
   const h2 = 'display text-3xl text-brand-text';
+  const [banner, finance] = await Promise.all([getLatestBanner(t.id), getPublicFinance(t.id, false)]);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-3xl flex-col">
@@ -70,7 +74,9 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
         <span className="text-xs text-muted">{d.organizationName}</span>
       </header>
 
-      <section className="relative">
+      <NoticeBanner banner={banner} />
+
+      <section className="relative mt-0">
         {t.ogImageKey ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={publicUrl(t.ogImageKey)} alt={`Ảnh bìa ${t.name}`} className="aspect-[1.91/1] w-full object-cover" />
@@ -218,6 +224,8 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
           )}
         </section>
       )}
+
+      <FinanceSummary data={finance} />
 
       {contactLinks.length > 0 && (
         <section className="flex flex-col gap-3 px-4 pt-8">

@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { FinanceSummary, NoticeBanner } from '@/components/public-extras';
 import { Logo } from '@/components/ui';
+import { getPublicFinance } from '@/server/finance/service';
+import { getLatestBanner } from '@/server/notifications/service';
 import { vietQrPayload } from '@/server/payments/vietqr';
 import { formatPhone } from '@/server/registration/rules';
 import { getTicket } from '@/server/registration/service';
@@ -29,6 +32,7 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
   const remaining = Math.max(0, r.amountDue - r.amountPaid);
   const canPay = remaining > 0 && bank.bin && bank.accountNo && r.status !== 'cancelled';
   const pay = PAY[r.paymentStatus]!;
+  const [banner, finance] = await Promise.all([getLatestBanner(t.id), getPublicFinance(t.id, true)]);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col pb-10">
@@ -36,6 +40,8 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
         <Link href="/" aria-label="VậtTay.vn"><Logo /></Link>
         <span className="text-xs text-muted">Lưu link này để xem lại vé</span>
       </header>
+
+      <NoticeBanner banner={banner} />
 
       {r.paymentStatus === 'paid' && r.amountDue > 0 && (
         <div className="mx-4 mt-4 flex items-center gap-3 bg-[#0f2418] p-3.5 text-success-text" role="status">
@@ -100,6 +106,8 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
         </div>
       </section>
       <p className="px-4 pt-3 text-center text-sm text-muted">Đưa mã này cho bàn cân để check-in. Nên chụp màn hình phòng khi mất mạng.</p>
+
+      <FinanceSummary data={finance} />
 
       <div className="flex flex-col gap-2 px-4 pt-6">
         <Link href={`/${t.slug}`} className="flex min-h-12 items-center justify-center border-2 border-fg font-display text-lg font-extrabold uppercase italic">
