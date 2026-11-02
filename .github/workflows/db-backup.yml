@@ -1,0 +1,22 @@
+# Sao lưu DB mỗi đêm (02:17 giờ VN) thành artifact riêng tư, giữ 30 ngày.
+# Đồng thời giữ project Supabase gói Free không bị tạm dừng vì không hoạt động.
+name: DB backup
+on:
+  schedule:
+    - cron: '17 19 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    container: postgres:17
+    steps:
+      - name: pg_dump
+        run: pg_dump "$DATABASE_URL" --no-owner --no-privileges --schema=public --schema=drizzle -Fc -f backup.dump
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup.dump
+          retention-days: 30

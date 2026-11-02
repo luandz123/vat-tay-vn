@@ -1,0 +1,24 @@
+# Chạy migration Drizzle lên Supabase khi có migration mới trên main.
+# Cần secret DATABASE_URL_DIRECT (Supabase → Connect → Direct connection hoặc Session pooler, cổng 5432).
+name: DB migrate
+on:
+  push:
+    branches: [main]
+    paths: ['drizzle/**']
+  workflow_dispatch:
+
+concurrency: db-migrate
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}

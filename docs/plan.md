@@ -27,10 +27,14 @@ Có thể tham khảo thuật toán của thư viện `brackets-manager` nhưng 
 
 ## Sprint 0 — Nền móng (2–3 ngày)
 - [x] Next.js + TS + Tailwind, Drizzle schema, `CLAUDE.md`, tài liệu DB
-- [ ] Tạo project Supabase (region Singapore), `.env.local`, chạy migration đầu tiên
-- [ ] `src/lib/auth.ts`, `realtime.ts`, `storage.ts` (lớp bọc Supabase)
-- [ ] Theme A: màu, font Barlow/Barlow Condensed, nút xéo; cài shadcn/ui
-- [ ] Deploy Vercel (preview), GitHub Actions: typecheck + lint + test; cron backup `pg_dump` + ping chống pause
+- [x] Tạo project Supabase
+- [x] Migration đầu tiên `drizzle/0000_init.sql` (chạy qua workflow DB migrate)
+- [x] `src/lib/auth.ts`, `realtime.ts`, `storage.ts` (lớp bọc Supabase) + middleware làm mới phiên
+- [x] Theme A: màu, font Barlow/Barlow Condensed (có tiếng Việt), nút xéo
+- [x] Module mẫu `src/server/registration/fees.ts` + 15 unit test
+- [x] GitHub Actions: CI (typecheck, lint, test, build), DB migrate, backup hằng đêm
+- [ ] Bạn: cấu hình Supabase / GitHub secret / Vercel (mục "Thiết lập một lần" bên dưới)
+- [ ] Cài shadcn/ui khi bắt đầu Sprint 1
 
 ## Sprint 1 — BTC tạo giải & trang công khai (chức năng 1–13, 30–34)
 - Đăng nhập BTC (Google / email), tạo organization, thông tin nhận tiền
@@ -68,3 +72,22 @@ Có thể tham khảo thuật toán của thư viện `brackets-manager` nhưng 
 ## Sprint 6 — Giải thật đầu tiên (pilot)
 - Tìm 1 BTC thân quen (ví dụ giải CLB/trường), đồng hành tại sân, ghi lại lỗi và góp ý
 - Sửa lỗi, rồi mới mở cho BTC khác
+
+## Thiết lập một lần (Sprint 0)
+
+**Supabase** (project `ezqzrorbzkatygdpxyoc`):
+1. Storage → tạo bucket `public-images`, bật Public.
+2. Authentication → Providers: bật Email (magic link); Google khi có OAuth client.
+3. Authentication → URL Configuration: thêm `http://localhost:3000/**` và domain Vercel vào Redirect URLs.
+
+**GitHub** → Settings → Secrets and variables → Actions:
+- `DATABASE_URL_DIRECT`: chuỗi kết nối Postgres cổng 5432 (Supabase → Connect). Dùng cho migrate và backup.
+
+**Vercel** → Import repo → Environment Variables (giá trị từ Supabase → Project Settings → API / Connect):
+- `DATABASE_URL` (Transaction pooler, cổng 6543)
+- `NEXT_PUBLIC_SUPABASE_URL` = `https://ezqzrorbzkatygdpxyoc.supabase.co`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `APP_ENCRYPTION_KEY` (`openssl rand -base64 32`)
+- `NEXT_PUBLIC_SITE_URL` = domain Vercel
+
+Không dán các khóa bí mật vào chat hay commit vào repo.
