@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-4 py-16 text-center">
@@ -13,12 +15,12 @@ export default function Home() {
         trực tiếp.
       </p>
       <div className="flex justify-center">
-        <a
+        <Link
           href="/btc"
           className="display btn-slant inline-flex min-h-12 items-center bg-brand px-8 text-lg text-white hover:brightness-110"
         >
           Tạo giải ngay
-        </a>
+        </Link>
       </div>
       <p className="text-sm text-muted">Đang xây dựng · Sprint 0</p>
     </main>
