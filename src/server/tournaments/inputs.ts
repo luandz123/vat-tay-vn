@@ -7,8 +7,9 @@ const optInt = (min: number, max: number) =>
   z
     .union([z.number(), z.string()])
     .optional()
+    .nullable()
     .transform((v, ctx) => {
-      if (v === undefined || v === '') return null;
+      if (v === undefined || v === null || v === '') return null;
       const n = Number(v);
       if (!Number.isInteger(n) || n < min || n > max) {
         ctx.addIssue({ code: 'custom', message: `Cần số nguyên từ ${min} đến ${max}` });
