@@ -11,6 +11,8 @@ concurrency: db-migrate
 
 jobs:
   migrate:
+    # Bật bằng repo variable DB_ACTIONS_ENABLED=true sau khi đã thêm secret DATABASE_URL_DIRECT.
+    if: ${{ vars.DB_ACTIONS_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -8,6 +8,8 @@ on:
 
 jobs:
   backup:
+    # Bật bằng repo variable DB_ACTIONS_ENABLED=true sau khi đã thêm secret DATABASE_URL_DIRECT.
+    if: ${{ vars.DB_ACTIONS_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     container: postgres:17
     steps:

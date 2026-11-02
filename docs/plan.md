@@ -28,12 +28,14 @@ Có thể tham khảo thuật toán của thư viện `brackets-manager` nhưng 
 ## Sprint 0 — Nền móng (2–3 ngày)
 - [x] Next.js + TS + Tailwind, Drizzle schema, `CLAUDE.md`, tài liệu DB
 - [x] Tạo project Supabase
-- [x] Migration đầu tiên `drizzle/0000_init.sql` (chạy qua workflow DB migrate)
+- [x] Migration `0000_init` + `0001_enable_rls` đã chạy lên Supabase (khóa Data API: anon không đọc/ghi được bảng)
+- [x] Supabase: bucket `public-images`, đăng nhập Email, Site URL + Redirect URLs
+- [x] Vercel: project `vat-tay-vn` (region lhr1, gần DB London), đủ biến môi trường, deploy từ `main`
 - [x] `src/lib/auth.ts`, `realtime.ts`, `storage.ts` (lớp bọc Supabase) + middleware làm mới phiên
 - [x] Theme A: màu, font Barlow/Barlow Condensed (có tiếng Việt), nút xéo
 - [x] Module mẫu `src/server/registration/fees.ts` + 15 unit test
 - [x] GitHub Actions: CI (typecheck, lint, test, build), DB migrate, backup hằng đêm
-- [ ] Bạn: cấu hình Supabase / GitHub secret / Vercel (mục "Thiết lập một lần" bên dưới)
+- [ ] Bạn: GitHub secret `DATABASE_URL_DIRECT` + repo variable `DB_ACTIONS_ENABLED=true` (bật migrate tự động và backup hằng đêm)
 - [ ] Cài shadcn/ui khi bắt đầu Sprint 1
 
 ## Sprint 1 — BTC tạo giải & trang công khai (chức năng 1–13, 30–34)
@@ -75,7 +77,7 @@ Có thể tham khảo thuật toán của thư viện `brackets-manager` nhưng 
 
 ## Thiết lập một lần (Sprint 0)
 
-**Supabase** (project `ezqzrorbzkatygdpxyoc`):
+**Supabase** (project `ezqzrorbzkatygdpxyoc`, region London `eu-west-2` — chấp nhận cho MVP, cân nhắc chuyển Singapore khi có người dùng thật):
 1. Storage → tạo bucket `public-images`, bật Public.
 2. Authentication → Providers: bật Email (magic link); Google khi có OAuth client.
 3. Authentication → URL Configuration: thêm `http://localhost:3000/**` và domain Vercel vào Redirect URLs.
