@@ -6,6 +6,7 @@ import { FinanceSummary, NoticeBanner } from '@/components/public-extras';
 import { ShareTools } from '@/components/share-tools';
 import { getPublicFinance } from '@/server/finance/service';
 import { getLatestBanner } from '@/server/notifications/service';
+import { getResults } from '@/server/results/service';
 import { Logo } from '@/components/ui';
 import { publicUrl } from '@/lib/storage';
 import { formatDateTime, formatDayDate, formatTime, formatVnd } from '@/server/shared/time';
@@ -63,7 +64,12 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
     ? buildSharePost({ name: t.name, startsAt: t.startsAt, venueName: t.venueName, venueAddress: t.venueAddress, registrationDeadline: t.registrationDeadline, url, categories: d.categories, priceTiers: d.priceTiers, prizes: d.prizes, contactPhone: c.phone ?? null })
     : null;
   const h2 = 'display text-3xl text-brand-text';
-  const [banner, finance] = await Promise.all([getLatestBanner(t.id), getPublicFinance(t.id, false)]);
+  const [banner, finance, results] = await Promise.all([
+    getLatestBanner(t.id),
+    getPublicFinance(t.id, false),
+    t.status === 'ongoing' || t.status === 'finished' ? getResults(t.id) : Promise.resolve([]),
+  ]);
+  const podiums = results.filter((r) => r.placings.length);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-3xl flex-col">
@@ -120,6 +126,25 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
         <Fact k="Hạn đăng ký" v={t.registrationDeadline ? formatDateTime(t.registrationDeadline) : 'Đến ngày thi đấu'} />
         <Fact k="Đã đăng ký" v={`${d.registeredCount}${t.capacity ? ` / ${t.capacity}` : ''} VĐV`} s={seatsLeft !== null ? { label: `Còn ${seatsLeft} suất` } : undefined} />
       </section>
+
+      {podiums.length > 0 && (
+        <section className="flex flex-col gap-3 px-4 pt-8">
+          <h2 className={h2}>Kết quả</h2>
+          {podiums.map((r) => (
+            <div key={r.category.id} className="flex flex-col gap-1.5 border border-line bg-surface p-3.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="display text-lg">{r.category.kind === 'all_around' ? '' : `${HAND_LABEL[r.category.hand]} · `}{r.category.label}</span>
+                <a href={`/api/giai/${t.slug}/anh-ket-qua/${r.category.id}`} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-text">Ảnh chia sẻ</a>
+              </div>
+              {r.placings.filter((p) => p.place <= 3).map((p) => (
+                <span key={p.entryId} className="text-sm">
+                  <strong className={PLACE_COLOR[p.place] ?? ''}>{['', 'Nhất', 'Nhì', 'Ba'][p.place]}</strong> · {p.name}{p.club ? ` (${p.club})` : ''}
+                </span>
+              ))}
+            </div>
+          ))}
+        </section>
+      )}
 
       {t.description && <p className="whitespace-pre-line px-4 pt-7 text-fg-2">{t.description}</p>}
 

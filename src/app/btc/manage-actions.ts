@@ -95,3 +95,8 @@ export async function deleteExpenseAction(tid: string, expenseId: string) {
 export async function setFinanceVisibilityAction(tid: string, v: string) {
   return run(tid, (u) => setFinanceVisibility(u, tid, v));
 }
+
+export async function finishTournamentAction(tid: string, force: boolean) {
+  const { finishTournament } = await import('@/server/results/service');
+  return run(tid, (u) => finishTournament(u, tid, force));
+}

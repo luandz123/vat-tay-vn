@@ -32,5 +32,9 @@ Next.js 15 (App Router, TypeScript, Tailwind 4) · Drizzle ORM + PostgreSQL · S
 
 ## Quy ước code
 - Logic khó (bốc thăm, sinh bảng loại đơn/kép, tiến trận, tính phí combo, xét cân, Toàn năng) phải có unit test Vitest trong `src/server/**/*.test.ts`.
+- Service có DB: integration test `*.int.test.ts` chạy Postgres thật trong bộ nhớ (PGlite, `src/test/pglite-db.ts`, dữ liệu mẫu `src/test/fixtures.ts`) với `vi.mock('@/db', () => import('@/test/pglite-db'))`.
+- Trong `db.transaction(async (tx) => …)` CHỈ dùng `tx`, không gọi hàm dùng `db` toàn cục (kiểm tra quyền làm trước transaction). Vi phạm sẽ treo test PGlite.
+- Bảng đấu: trạng thái luôn tính lại bằng `src/server/brackets/engine.ts` từ khung + kết quả (`recompute`), không sửa tay `matches.status`.
+- Migration chạy lên Supabase: `drizzle-kit migrate` (CI, cần secret) hoặc qua Management API rồi ghi `drizzle.__drizzle_migrations`.
 - Trước khi báo xong: `npm run typecheck && npm run lint && npm test`.
 - Không deploy vào ngày có giải đang diễn ra.
