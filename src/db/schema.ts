@@ -96,12 +96,12 @@ export const tournaments = pgTable('tournaments', {
   description: text('description'),
   rules: text('rules'),           // điều lệ
   notes: text('notes'),           // lưu ý: móng tay, trang sức…
-  coverImageKey: text('cover_image_key').notNull(), // ảnh gốc
+  coverImageKey: text('cover_image_key'), // ảnh gốc; bắt buộc khi xuất bản (bản nháp được để trống)
   ogImageKey: text('og_image_key'),                 // ảnh đã cắt 1.91:1
-  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+  startsAt: timestamp('starts_at', { withTimezone: true }), // bắt buộc khi xuất bản
   endsAt: timestamp('ends_at', { withTimezone: true }),
   timezone: text('timezone').notNull().default('Asia/Ho_Chi_Minh'),
-  venueName: text('venue_name').notNull(),
+  venueName: text('venue_name'), // bắt buộc khi xuất bản
   venueAddress: text('venue_address'),
   mapsUrl: text('maps_url'),
   contacts: jsonb('contacts').$type<{ zalo?: string; facebook?: string; tiktok?: string; phone?: string }>(), // null = dùng của organization
