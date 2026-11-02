@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { OrganizationForm } from '@/components/organization-form';
+import { SepayConnect } from '@/components/sepay-connect';
 import { requireUser } from '@/lib/auth';
 import { getOrganization } from '@/server/organizations/service';
 import { AppError } from '@/server/shared/errors';
@@ -31,6 +32,11 @@ export default async function EditOrganizationPage({ params }: { params: Promise
           bankAccountNo: org.bankAccountNo ?? '',
           bankAccountName: org.bankAccountName ?? '',
         }}
+      />
+      <SepayConnect
+        orgId={org.id}
+        connected={!!org.webhookSecret}
+        webhookUrl={`${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/api/webhooks/sepay/${org.id}`}
       />
     </main>
   );

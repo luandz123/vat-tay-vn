@@ -74,7 +74,7 @@ export const organizations = pgTable('organizations', {
   // Đối soát tự động (BTC tự kết nối)
   paymentProvider: paymentProvider('payment_provider').notNull().default('none'),
   providerApiKeyEnc: text('provider_api_key_enc'), // mã hóa ở tầng ứng dụng, không lưu bản rõ
-  webhookSecret: text('webhook_secret'),
+  webhookSecret: text('webhook_secret'), // SHA-256 của API key webhook (không lưu key gốc)
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

@@ -1,0 +1,114 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { Logo } from '@/components/ui';
+import { vietQrPayload } from '@/server/payments/vietqr';
+import { formatPhone } from '@/server/registration/rules';
+import { getTicket } from '@/server/registration/service';
+import { bankName } from '@/server/shared/banks';
+import { formatDateTime, formatTime, formatVnd } from '@/server/shared/time';
+import { GENDER_LABEL, HAND_LABEL } from '@/server/tournaments/templates';
+import { PaymentPanel, QrImage } from './payment-panel';
+
+export const dynamic = 'force-dynamic';
+export const metadata: Metadata = { title: 'Vé của tôi', robots: { index: false, follow: false } };
+
+const PAY: Record<string, { label: string; cls: string }> = {
+  paid: { label: 'Đã đóng', cls: 'text-success' },
+  partial: { label: 'Đóng thiếu', cls: 'text-[#b45309]' },
+  unpaid: { label: 'Chưa đóng', cls: 'text-[#b45309]' },
+  refunded: { label: 'Đã hoàn', cls: 'text-[#5b606c]' },
+};
+
+export default async function TicketPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const ticket = await getTicket(token);
+  if (!ticket) notFound();
+  const { registration: r, athlete: a, tournament: t, bank, entries } = ticket;
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const remaining = Math.max(0, r.amountDue - r.amountPaid);
+  const canPay = remaining > 0 && bank.bin && bank.accountNo && r.status !== 'cancelled';
+  const pay = PAY[r.paymentStatus]!;
+
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col pb-10">
+      <header className="flex items-center justify-between border-b border-line px-4 py-3">
+        <Link href="/" aria-label="VậtTay.vn"><Logo /></Link>
+        <span className="text-xs text-muted">Lưu link này để xem lại vé</span>
+      </header>
+
+      {r.paymentStatus === 'paid' && r.amountDue > 0 && (
+        <div className="mx-4 mt-4 flex items-center gap-3 bg-[#0f2418] p-3.5 text-success-text" role="status">
+          <span className="flex size-9 items-center justify-center rounded-full bg-success text-white" aria-hidden="true">✓</span>
+          <span className="font-semibold">BTC đã nhận {formatVnd(r.amountPaid)}. Hẹn gặp bạn ở giải!</span>
+        </div>
+      )}
+
+      {canPay && (
+        <>
+          <h1 className="display px-4 pt-5 text-3xl">Thanh toán lệ phí</h1>
+          <PaymentPanel
+            token={token}
+            payload={vietQrPayload({ bankBin: bank.bin!, accountNo: bank.accountNo!, amount: remaining, content: r.transferRef })}
+            remaining={remaining}
+            bankName={bankName(bank.bin) ?? bank.bin!}
+            accountNo={bank.accountNo!}
+            accountName={bank.accountName ?? bank.organizationName}
+            transferRef={r.transferRef}
+          />
+        </>
+      )}
+
+      <section className="mx-4 mt-6 flex flex-col bg-fg text-bg">
+        <div className="flex items-center justify-between bg-brand px-4 py-3 text-white">
+          <span className="display truncate text-lg">{t.name}</span>
+          {t.startsAt && <span className="shrink-0 text-sm font-semibold">{formatTime(t.startsAt)} · {formatDateTime(t.startsAt).split(' · ')[1]}</span>}
+        </div>
+        <div className="flex flex-col items-center gap-2.5 px-4 py-5">
+          <QrImage text={`${site}/ve/${token}`} label="Mã QR check-in" size={180} />
+          <span className="text-sm font-bold tracking-[0.2em]">#{r.code}</span>
+          <span className="display text-3xl leading-none">{a.fullName}</span>
+          <span className="text-sm text-[#3c404b]">
+            {a.gender === 'male' ? 'Nam' : 'Nữ'} · Sinh {a.birthYear} · {formatPhone(a.phone)}
+            {a.club && ` · ${a.club}`}
+          </span>
+          {r.ageWarning && <span className="bg-[#fef3c7] px-2 py-1 text-xs font-semibold text-[#92400e]">Năm sinh ngoài giới hạn — chờ BTC xem xét</span>}
+        </div>
+        <div className="grid grid-cols-2 gap-3 border-t-2 border-dashed border-[#c9ccd4] px-4 py-3 text-sm">
+          {entries.map((e) => (
+            <div key={e.id}>
+              <div className="text-[#5b606c]">{HAND_LABEL[e.category.hand]}</div>
+              <div className="font-bold">
+                {GENDER_LABEL[e.category.gender]} {e.category.label}
+              </div>
+            </div>
+          ))}
+          <div>
+            <div className="text-[#5b606c]">Lệ phí</div>
+            <div className={`font-bold ${pay.cls}`}>
+              {r.amountDue === 0 ? 'Miễn phí' : `${pay.label} ${formatVnd(r.amountPaid)}/${formatVnd(r.amountDue)}`}
+            </div>
+          </div>
+          <div>
+            <div className="text-[#5b606c]">Trạng thái</div>
+            <div className="font-bold">{r.status === 'approved' ? 'Đã duyệt' : r.status === 'pending' ? 'Chờ BTC duyệt' : r.status === 'rejected' ? 'Bị từ chối' : 'Đã hủy'}</div>
+          </div>
+          <div className="col-span-2">
+            <div className="text-[#5b606c]">Cân ký</div>
+            <div className="font-bold">{r.weighedKg ? `Đã cân ${Number(r.weighedKg)} kg` : 'Chưa cân'}</div>
+          </div>
+        </div>
+      </section>
+      <p className="px-4 pt-3 text-center text-sm text-muted">Đưa mã này cho bàn cân để check-in. Nên chụp màn hình phòng khi mất mạng.</p>
+
+      <div className="flex flex-col gap-2 px-4 pt-6">
+        <Link href={`/${t.slug}`} className="flex min-h-12 items-center justify-center border-2 border-fg font-display text-lg font-extrabold uppercase italic">
+          Xem trang giải
+        </Link>
+        <Link href={`/${t.slug}/dang-ky`} className="text-center text-sm font-semibold text-brand-text">
+          Đăng ký thêm hạng mục
+        </Link>
+      </div>
+    </main>
+  );
+}

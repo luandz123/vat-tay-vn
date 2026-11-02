@@ -117,3 +117,11 @@ export async function publishAction(id: string): Promise<ActionResult<{ slug: st
     return { slug: t.slug };
   });
 }
+
+export async function rotateWebhookSecretAction(orgId: string): Promise<ActionResult<{ secret: string }>> {
+  return toResult(async () => {
+    const user = await requireUser();
+    const { rotateWebhookSecret } = await import('@/server/organizations/webhook-secret');
+    return { secret: await rotateWebhookSecret(user.id, orgId) };
+  });
+}
