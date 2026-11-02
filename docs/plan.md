@@ -39,6 +39,12 @@ Có thể tham khảo thuật toán của thư viện `brackets-manager` nhưng 
 - [ ] Cài shadcn/ui khi bắt đầu Sprint 1
 
 ## Sprint 1 — BTC tạo giải & trang công khai (chức năng 1–13, 30–34)
+Trạng thái: code xong trên nhánh `sprint-1/tao-giai` (48 test, có integration test PGlite). Còn lại:
+- [ ] Kiểm thử tay trên production sau khi merge
+- [ ] Cấu hình SMTP riêng (Resend) cho Supabase Auth — SMTP mặc định chỉ gửi email cho thành viên project
+- [ ] Đăng nhập Google (cần tạo OAuth client trên Google Cloud)
+- [ ] Liên kết link ngắn `vattay.vn/...` khi có tên miền
+
 - Đăng nhập BTC (Google / email), tạo organization, thông tin nhận tiền
 - Wizard 5 bước: thông tin + ảnh bìa (cắt 1.91:1) → hạng mục (mẫu gợi ý, Toàn năng) → lệ phí & đợt giá → lịch phiên & giải thưởng → xuất bản
 - Trang giải công khai `/[slug]` (SSR), OG image, nút chia sẻ, bài đăng mẫu, QR giải
