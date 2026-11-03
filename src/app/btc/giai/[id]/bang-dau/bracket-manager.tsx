@@ -14,7 +14,7 @@ import {
 import { BracketView } from '@/components/bracket-view';
 import { Alert, Button, Card, cx } from '@/components/ui';
 import type { BoardDTO, MatchDTO } from '@/server/brackets/dto';
-import { HAND_LABEL } from '@/server/tournaments/templates';
+import { HAND_LABEL, HAND_SHORT } from '@/server/tournaments/templates';
 import { TablesPanel } from './tables-panel';
 
 export function BracketManager({ tournamentId, board, selectedId, site }: { tournamentId: string; board: BoardDTO; selectedId: string | null; site: string }) {
@@ -87,7 +87,7 @@ export function BracketManager({ tournamentId, board, selectedId, site }: { tour
             scroll={false}
             className={cx('flex min-h-10 items-center gap-1.5 border border-line-strong px-3 text-sm font-semibold', c.id === cat?.id ? 'bg-fg text-bg' : 'bg-surface')}
           >
-            {HAND_LABEL[c.hand].replace('Tay ', '')} · {c.gender === 'female' ? 'Nữ' : c.gender === 'male' ? 'Nam' : 'Mở'} {c.label}
+            {HAND_SHORT[c.hand]} · {c.gender === 'female' ? 'Nữ' : c.gender === 'male' ? 'Nam' : 'Mở'} {c.label}
             <span className={cx('text-xs', c.bracket?.status === 'finished' ? 'text-success' : c.bracket?.status === 'in_progress' ? 'text-brand-text' : 'text-muted')}>
               {c.bracket ? { draft: 'nháp', locked: 'đã khóa', in_progress: 'đang đấu', finished: 'xong' }[c.bracket.status] : `${c.checkedInCount}/${c.entrantCount}`}
             </span>

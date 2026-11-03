@@ -73,3 +73,6 @@ export function categoriesFromTemplate(
 
 export const HAND_LABEL: Record<Hand, string> = { left: 'Tay trái', right: 'Tay phải' };
 export const GENDER_LABEL: Record<CategoryGender, string> = { male: 'Nam', female: 'Nữ', open: 'Mở' };
+
+/** Nhãn tay ngắn, viết hoa: "Phải" / "Trái". */
+export const HAND_SHORT: Record<Hand, string> = { left: 'Trái', right: 'Phải' };

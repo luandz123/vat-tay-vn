@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { BracketView } from '@/components/bracket-view';
 import { cx } from '@/components/ui';
 import type { BoardDTO } from '@/server/brackets/dto';
-import { HAND_LABEL } from '@/server/tournaments/templates';
+import { HAND_LABEL, HAND_SHORT } from '@/server/tournaments/templates';
 
 type Data = BoardDTO & { tournament: { id: string; name: string; slug: string } };
 
@@ -50,7 +50,7 @@ export function LiveBoard({ slug, initial }: { slug: string; initial: Data }) {
             <div key={m.id} className={cx('flex w-64 shrink-0 flex-col gap-2 border bg-surface p-3', m.status === 'in_progress' ? 'border-brand' : 'border-line')}>
               <div className="flex justify-between text-xs">
                 <span className="display text-base">{data.tables.find((t) => t.id === m.tableId)?.name ?? ''}</span>
-                <span className="text-muted">{HAND_LABEL[c.hand].replace('Tay ', '')} {c.label} · T{m.number}</span>
+                <span className="text-muted">{HAND_SHORT[c.hand]} {c.label} · T{m.number}</span>
               </div>
               <div className="flex items-center gap-2"><span className="h-5 w-1 bg-corner-red" /><strong className="truncate">{n(m.red)}</strong></div>
               <div className="flex items-center gap-2"><span className="h-5 w-1 bg-corner-blue" /><strong className="truncate">{n(m.blue)}</strong></div>

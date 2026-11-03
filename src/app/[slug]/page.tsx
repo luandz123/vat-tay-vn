@@ -13,7 +13,7 @@ import { formatDateTime, formatDayDate, formatTime, formatVnd } from '@/server/s
 import { getPublicTournament } from '@/server/tournaments/service';
 import { buildSharePost } from '@/server/tournaments/share-post';
 import { isValidSlug } from '@/server/tournaments/slug';
-import { GENDER_LABEL, HAND_LABEL } from '@/server/tournaments/templates';
+import { GENDER_LABEL, HAND_LABEL, HAND_SHORT } from '@/server/tournaments/templates';
 import { Countdown } from './countdown';
 
 export const revalidate = 60;
@@ -212,7 +212,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
                 {s.weighInStart && <span><strong>Cân:</strong> {formatTime(s.weighInStart)}{s.weighInEnd && ` – ${formatTime(s.weighInEnd)}`}</span>}
                 {s.competeStart && <span><strong>Thi đấu:</strong> {formatTime(s.competeStart)}{s.competeEnd && ` – ${formatTime(s.competeEnd)}`}</span>}
                 <span className="text-muted">
-                  {d.categories.filter((x) => x.sessionId === s.id).map((x) => `${HAND_LABEL[x.hand].replace('Tay ', '')} ${x.label}`).join(' · ') || '—'}
+                  {d.categories.filter((x) => x.sessionId === s.id).map((x) => `${HAND_SHORT[x.hand]} ${x.label}`).join(' · ') || '—'}
                 </span>
               </div>
             </div>
