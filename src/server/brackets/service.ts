@@ -144,7 +144,7 @@ async function fillAllAround(tx: Tx, finishedCategoryId: string) {
 /* ───────────── BTC: sinh bảng, đổi vị trí ───────────── */
 
 export const generateInput = z.object({
-  type: z.enum(['single', 'double']),
+  type: z.enum(['single', 'double']).default('double'),
   thirdPlaceMatch: z.boolean().default(true),
   grandFinalReset: z.boolean().default(true),
   onlyCheckedIn: z.boolean().default(true),

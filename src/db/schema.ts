@@ -149,7 +149,7 @@ export const categories = pgTable('categories', {
   birthYearMin: smallint('birth_year_min'),    // null = theo giải
   birthYearMax: smallint('birth_year_max'),
   capacity: integer('capacity'),
-  bracketType: bracketType('bracket_type').notNull().default('single'),
+  bracketType: bracketType('bracket_type').notNull().default('double'), // mặc định loại kép (nhánh thắng/thua)
   /** Chỉ cho all_around: lấy VĐV đạt hạng <= giá trị này (1 = chỉ HCV, 2 = HCV+HCB, 3 = cả HCĐ). */
   allAroundMaxPlace: smallint('all_around_max_place'),
   sortOrder: smallint('sort_order').notNull().default(0),
@@ -315,7 +315,7 @@ export const armTables = pgTable('arm_tables', {
 export const brackets = pgTable('brackets', {
   id: id(),
   categoryId: uuid('category_id').notNull().unique().references(() => categories.id, { onDelete: 'cascade' }),
-  type: bracketType('type').notNull(),
+  type: bracketType('type').notNull().default('double'),
   status: bracketStatus('status').notNull().default('draft'),
   drawSeed: integer('draw_seed'), // để bốc thăm tái lập được khi kiểm tra
   thirdPlaceMatch: boolean('third_place_match').notNull().default(true), // loại đơn: đấu tranh hạng 3

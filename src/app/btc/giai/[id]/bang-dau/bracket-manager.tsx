@@ -22,7 +22,7 @@ export function BracketManager({ tournamentId, autoAssign, board, selectedId, si
   const [pending, start] = useTransition();
   const [error, setError] = useState<string>();
   const [dragging, setDragging] = useState<string>();
-  const [opts, setOpts] = useState({ type: 'single' as 'single' | 'double', thirdPlaceMatch: true, grandFinalReset: true, onlyCheckedIn: true });
+  const [opts, setOpts] = useState({ type: 'double' as 'single' | 'double', thirdPlaceMatch: true, grandFinalReset: true, onlyCheckedIn: true });
   const cat = board.categories.find((c) => c.id === selectedId) ?? board.categories[0];
   const act = (fn: () => Promise<ActionResult<unknown>>) =>
     start(async () => {
@@ -126,9 +126,9 @@ export function BracketManager({ tournamentId, autoAssign, board, selectedId, si
               {(!cat.bracket || draft) && (
                 <div className="flex flex-wrap items-center gap-3 border border-line-strong p-3 text-sm">
                   <div className="flex">
-                    {(['single', 'double'] as const).map((t) => (
+                    {(['double', 'single'] as const).map((t) => (
                       <button key={t} type="button" aria-pressed={opts.type === t} onClick={() => setOpts({ ...opts, type: t })} className={cx('min-h-9 border border-line-strong px-3 font-bold', opts.type === t ? 'bg-fg text-bg' : '')}>
-                        {t === 'single' ? 'Loại đơn' : 'Loại kép'}
+                        {t === 'single' ? 'Loại trực tiếp' : 'Loại kép (nhánh thắng/thua)'}
                       </button>
                     ))}
                   </div>
@@ -146,7 +146,7 @@ export function BracketManager({ tournamentId, autoAssign, board, selectedId, si
               {cat.bracket && (
                 <>
                   <div className="flex flex-wrap items-center gap-3 text-sm text-fg-2">
-                    <span>{cat.bracket.type === 'single' ? 'Loại đơn' : 'Loại kép'}</span>
+                    <span>{cat.bracket.type === 'single' ? 'Loại trực tiếp' : 'Loại kép (nhánh thắng/thua)'}</span>
                     {draft && <span>· Kéo tên VĐV ở vòng 1 thả lên người khác để đổi chỗ.</span>}
                     {(cat.bracket.status === 'draft' || cat.bracket.status === 'locked') && (
                       <Button className="ml-auto min-h-9" disabled={pending} onClick={() => act(() => lockBracketAction(tournamentId, cat.bracket!.id, cat.bracket!.status === 'draft'))}>

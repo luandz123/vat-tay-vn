@@ -36,6 +36,13 @@
       "when": 1793723849403,
       "tag": "0004_match_not_before",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793724873080,
+      "tag": "0005_default_double",
+      "breakpoints": true
     }
   ]
 }

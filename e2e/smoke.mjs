@@ -214,7 +214,7 @@ try {
   ok('trọng tài hoãn trận → trận rời bàn');
 
   // BTC nhập nốt các trận còn lại (Đỏ thắng)
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 12; i++) { // loại kép 4 VĐV: tối đa 7 trận
     await page.reload();
     const btn = page.getByRole('button', { name: 'Đỏ thắng' });
     if ((await btn.count()) === 0) break;
