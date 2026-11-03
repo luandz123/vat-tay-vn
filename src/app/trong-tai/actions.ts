@@ -3,7 +3,7 @@
 /** Action của tablet trọng tài: xác thực bằng mã bàn (không cần tài khoản). */
 import { revalidatePath } from 'next/cache';
 import { publish, tableChannel, tournamentChannel } from '@/lib/realtime';
-import { addMatchEvent, autoAssignTables, recordResult, tableByCode, undoResult } from '@/server/brackets/service';
+import { addMatchEvent, autoAssignTables, holdMatch, recordResult, tableByCode, undoResult } from '@/server/brackets/service';
 import { AppError } from '@/server/shared/errors';
 import { toResult, type ActionResult } from '../_lib/action-result';
 
@@ -31,4 +31,7 @@ export async function refereeUndoAction(code: string, raw: unknown) {
 }
 export async function refereeEventAction(code: string, raw: unknown) {
   return withTable(code, (tableId) => addMatchEvent({ tableId }, raw));
+}
+export async function refereeHoldAction(code: string, raw: unknown) {
+  return withTable(code, (tableId) => holdMatch({ tableId }, raw));
 }

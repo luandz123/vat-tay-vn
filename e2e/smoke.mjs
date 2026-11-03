@@ -203,6 +203,15 @@ try {
   await ref.getByRole('button', { name: 'Trận tiếp theo →' }).click();
   await ref.getByText('Trận 2', { exact: false }).first().waitFor();
   ok('ghi lỗi, ghi lại kết quả; tablet tự chuyển sang trận tiếp theo');
+  const tv = await newPage(null);
+  await tv.goto(`${BASE}/${t.slug}/man-hinh`);
+  await tv.getByText('Bàn 1', { exact: true }).waitFor();
+  await tv.getByText('Trận 2', { exact: false }).first().waitFor();
+  ok('màn hình TV hiện trận trên Bàn 1');
+  await ref.getByRole('button', { name: '⏸ VĐV xin nghỉ – hoãn trận' }).click();
+  await ref.getByRole('button', { name: '3 phút' }).click();
+  await ref.getByText('Chưa có trận trên bàn').waitFor();
+  ok('trọng tài hoãn trận → trận rời bàn');
 
   // BTC nhập nốt các trận còn lại (Đỏ thắng)
   for (let i = 0; i < 5; i++) {

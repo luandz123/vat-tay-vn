@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import { cx } from '@/components/ui';
-import { refereeEventAction, refereeResultAction, refereeUndoAction } from '../actions';
+import { refereeEventAction, refereeHoldAction, refereeResultAction, refereeUndoAction } from '../actions';
 
 interface Side {
   id: string;
@@ -35,6 +35,7 @@ export function RefereeTablet({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string>();
   const [justWon, setJustWon] = useState<{ name: string; corner: 'red' | 'blue' }>();
+  const [holding, setHolding] = useState(false);
   // Giữ clientEventId khi gửi lại (mất mạng) để không ghi trùng
   const pendingEvent = useRef<string | null>(null);
 
@@ -133,6 +134,33 @@ export function RefereeTablet({
             ),
           )}
         </section>
+      )}
+
+      {current && !justWon && (
+        <div className="flex flex-wrap items-center gap-3 border-t border-line px-5 py-3">
+          {holding ? (
+            <>
+              <span className="font-semibold">Hoãn trận {current.number} (VĐV xin nghỉ):</span>
+              {[3, 5, 10].map((min) => (
+                <button
+                  key={min}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => send((cid) => refereeHoldAction(code, { matchId: current.id, minutes: min, clientEventId: cid }), () => setHolding(false))}
+                  className="min-h-12 min-w-24 border border-gold bg-warning-bg px-4 text-lg font-bold text-warning-text"
+                >
+                  {min} phút
+                </button>
+              ))}
+              <button type="button" onClick={() => setHolding(false)} className="min-h-12 px-4 font-semibold text-fg-2">Hủy</button>
+            </>
+          ) : (
+            <button type="button" onClick={() => setHolding(true)} className="min-h-12 border border-line-strong px-5 font-semibold">
+              ⏸ VĐV xin nghỉ – hoãn trận
+            </button>
+          )}
+          <span className="text-sm text-muted">Trận hoãn rời bàn, bàn tự lấy trận khác; hết giờ hoãn sẽ được xếp lại.</span>
+        </div>
       )}
 
       <footer className="flex flex-wrap items-center gap-4 border-t border-line px-5 py-3 text-sm text-muted">

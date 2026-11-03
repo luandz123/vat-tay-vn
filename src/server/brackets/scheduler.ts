@@ -1,10 +1,9 @@
 /**
  * Tự động gán trận vào bàn (thuần, không DB). Mỗi bàn giữ tối đa QUEUE_DEPTH trận (đang đấu + chuẩn bị).
- * Chọn trận theo: phiên sớm hơn → hạng bàn đang đấu (giữ VĐV ở một chỗ) → số trận nhỏ hơn;
- * tránh VĐV vừa đấu xong chưa đủ thời gian nghỉ (trừ khi không còn trận nào khác).
+ * Chọn trận theo: phiên sớm hơn → hạng bàn đang đấu (giữ VĐV ở một chỗ) → số trận nhỏ hơn.
+ * Thời gian nghỉ do trọng tài quyết định: trận bị hoãn (notBefore) chưa được gán lại trước giờ đó.
  */
 export const QUEUE_DEPTH = 2;
-export const REST_MS = 5 * 60_000;
 
 export interface SchedTable {
   id: string;
@@ -23,6 +22,8 @@ export interface SchedMatch {
   blue: string | null;
   winner: string | null;
   finishedAt: Date | null;
+  /** Trọng tài hoãn trận đến thời điểm này (VĐV xin nghỉ). */
+  notBefore?: Date | null;
   /** Bảng đã khóa hoặc đang đấu (bảng nháp không tự gán). */
   bracketLive: boolean;
   /** Mốc bắt đầu phiên của hạng (null = không có phiên). */
@@ -42,20 +43,15 @@ export function planAssignments(tables: readonly SchedTable[], matches: readonly
   const busyEntries = new Set(
     matches.filter((m) => m.tableId && (m.status === 'on_table' || m.status === 'in_progress')).flatMap((m) => [m.red, m.blue]).filter((x): x is string => !!x),
   );
-  // Lần cuối mỗi VĐV đấu xong
-  const lastPlayed = new Map<string, number>();
-  for (const m of matches) {
-    if (m.status !== 'finished' || !m.finishedAt) continue;
-    for (const e of [m.red, m.blue]) if (e) lastPlayed.set(e, Math.max(lastPlayed.get(e) ?? 0, m.finishedAt.getTime()));
-  }
   // Hạng mỗi bàn đang/vừa đấu
   const affinity = new Map<string, string>();
   for (const m of [...matches].filter((x) => x.tableId).sort((a, b) => (a.finishedAt?.getTime() ?? Infinity) - (b.finishedAt?.getTime() ?? Infinity))) {
     affinity.set(m.tableId!, m.categoryId);
   }
 
-  let pool = matches.filter((m) => m.status === 'ready' && !m.tableId && m.bracketLive && m.red && m.blue);
-  const rested = (m: SchedMatch) => [m.red!, m.blue!].every((e) => now.getTime() - (lastPlayed.get(e) ?? 0) >= REST_MS);
+  let pool = matches.filter(
+    (m) => m.status === 'ready' && !m.tableId && m.bracketLive && m.red && m.blue && (!m.notBefore || m.notBefore.getTime() <= now.getTime()),
+  );
   const free = (m: SchedMatch) => !busyEntries.has(m.red!) && !busyEntries.has(m.blue!);
 
   const load = new Map(tables.map((t) => [t.id, queued(t.id)]));
@@ -72,9 +68,7 @@ export function planAssignments(tables: readonly SchedTable[], matches: readonly
     if (!candidates.length) break;
     const sessionKey = (m: SchedMatch) => m.sessionStart?.getTime() ?? Number.MAX_SAFE_INTEGER;
     const earliest = Math.min(...candidates.map(sessionKey));
-    const inSession = candidates.filter((m) => sessionKey(m) === earliest);
-    const restedOnes = inSession.filter(rested);
-    const choices = restedOnes.length ? restedOnes : inSession;
+    const choices = candidates.filter((m) => sessionKey(m) === earliest);
     const aff = affinity.get(table.id);
     const pick = [...choices].sort(
       (a, b) => Number(b.categoryId === aff) - Number(a.categoryId === aff) || a.categoryOrder - b.categoryOrder || a.number - b.number,

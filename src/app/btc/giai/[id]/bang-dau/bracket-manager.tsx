@@ -18,7 +18,7 @@ import type { BoardDTO, MatchDTO } from '@/server/brackets/dto';
 import { HAND_LABEL, HAND_SHORT } from '@/server/tournaments/templates';
 import { TablesPanel } from './tables-panel';
 
-export function BracketManager({ tournamentId, autoAssign, board, selectedId, site }: { tournamentId: string; autoAssign: boolean; board: BoardDTO; selectedId: string | null; site: string }) {
+export function BracketManager({ tournamentId, autoAssign, board, selectedId, site, slug }: { tournamentId: string; autoAssign: boolean; board: BoardDTO; selectedId: string | null; site: string; slug: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string>();
   const [dragging, setDragging] = useState<string>();
@@ -78,6 +78,7 @@ export function BracketManager({ tournamentId, autoAssign, board, selectedId, si
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="display text-3xl">Bảng đấu &amp; bàn</h1>
         <span className="flex items-center gap-1.5 text-sm text-success-text"><span className="size-2 rounded-full bg-success" />Khán giả xem trực tiếp</span>
+        <a href={`/${slug}/man-hinh`} target="_blank" rel="noreferrer" className="text-sm font-semibold text-brand-text">Màn hình gọi VĐV (chiếu TV) ↗</a>
         <label className="ml-auto flex items-center gap-2 text-sm font-semibold">
           <input
             type="checkbox"

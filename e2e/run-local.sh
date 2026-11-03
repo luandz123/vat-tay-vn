@@ -11,6 +11,11 @@ if curl -s -o /dev/null "http://localhost:$PORT"; then echo "Cổng $PORT đang 
 [ "${SKIP_BUILD:-}" = 1 ] || npm run build > "$LOG.build" 2>&1
 setsid npx next start -p "$PORT" > "$LOG" 2>&1 &
 APP=$!
-trap 'kill -- -$APP 2>/dev/null; pkill -f next-server 2>/dev/null' EXIT  # next start sinh tiến trình next-server riêng
+cleanup() {
+  kill -- -"$APP" 2>/dev/null
+  # next start sinh tiến trình next-server riêng (tên tiến trình bắt đầu bằng next-se)
+  ps -eo pid,comm | awk '$2 ~ /^next-se/ {print $1}' | xargs -r kill 2>/dev/null
+}
+trap cleanup EXIT
 for _ in $(seq 30); do curl -s -o /dev/null "http://localhost:$PORT" && break; sleep 1; done
 BASE_URL=http://localhost:$PORT node e2e/smoke.mjs

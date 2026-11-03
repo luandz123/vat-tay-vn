@@ -110,7 +110,7 @@ export function MatchCard({
     <div className={cx('border bg-[#0f1116]', live ? 'border-brand' : 'border-line')}>
       <div className={cx('flex justify-between px-2.5 py-1 text-[11px] uppercase tracking-wider', live ? 'bg-brand text-white' : 'bg-[#1a1c24] text-muted')}>
         <span>Trận {m.number}{table ? ` · ${table.name}` : ''}</span>
-        <span>{STATUS[m.status]}</span>
+        <span>{m.notBefore && m.status === 'ready' ? `Hoãn đến ${new Date(m.notBefore).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' })}` : STATUS[m.status]}</span>
       </div>
       {row('red')}
       {row('blue')}

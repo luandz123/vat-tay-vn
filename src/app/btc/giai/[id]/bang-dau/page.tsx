@@ -17,7 +17,7 @@ export default async function BracketPage({ params, searchParams }: { params: Pr
   return (
     <>
       <LiveRefresh tournamentId={id} />
-      <BracketManager tournamentId={id} autoAssign={t.autoAssignTables} board={board} selectedId={hang ?? board.categories[0]?.id ?? null} site={site} />
+      <BracketManager tournamentId={id} slug={t.slug} autoAssign={t.autoAssignTables} board={board} selectedId={hang ?? board.categories[0]?.id ?? null} site={site} />
     </>
   );
 }

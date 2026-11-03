@@ -348,6 +348,7 @@ export const matches = pgTable('matches', {
   startedAt: timestamp('started_at', { withTimezone: true }),
   finishedAt: timestamp('finished_at', { withTimezone: true }),
   version: integer('version').notNull().default(0), // optimistic lock: tablet gửi kèm version
+  notBefore: timestamp('not_before', { withTimezone: true }), // trọng tài hoãn trận (VĐV xin nghỉ) đến thời điểm này
 }, (t) => [
   uniqueIndex('match_position_uq').on(t.bracketId, t.side, t.round, t.position),
   index('match_table_idx').on(t.tableId, t.status, t.queuePosition),

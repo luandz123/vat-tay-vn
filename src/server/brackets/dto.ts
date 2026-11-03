@@ -13,6 +13,7 @@ export interface MatchDTO {
   tableId: string | null;
   queuePosition: number | null;
   version: number;
+  notBefore: string | null;
 }
 
 export interface CategoryBoardDTO {
@@ -50,6 +51,7 @@ export function toBoardDTO(b: Board): BoardDTO {
       matches: c.matches.map((m) => ({
         id: m.id, side: m.side, round: m.round, number: m.number, red: m.redEntryId, blue: m.blueEntryId, winner: m.winnerEntryId,
         status: m.status, tableId: m.tableId, queuePosition: m.queuePosition, version: m.version,
+        notBefore: m.notBefore && m.notBefore > new Date() ? m.notBefore.toISOString() : null,
       })),
       results: c.results.map((r) => ({ entryId: r.entryId, place: r.place })),
       entrantCount: c.entrantCount,

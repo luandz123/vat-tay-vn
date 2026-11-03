@@ -6,7 +6,7 @@ import { LiveRefresh } from '@/components/live-refresh';
 import { Logo } from '@/components/ui';
 import { toBoardDTO } from '@/server/brackets/dto';
 import { canUndo, computeState } from '@/server/brackets/engine';
-import { getBoard, getMatchTallies, getTableQueue, tableByCode } from '@/server/brackets/service';
+import { autoAssignTables, getBoard, getMatchTallies, getTableQueue, tableByCode } from '@/server/brackets/service';
 import { RefereeTablet } from './referee-tablet';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +24,8 @@ export default async function RefereePage({ params }: { params: Promise<{ code: 
       </main>
     );
   const t = (await db.query.tournaments.findFirst({ where: eq(tournaments.id, table.tournamentId) }))!;
+  // Tablet tự làm mới mỗi 5 giây: tiện gán lại trận đã hết giờ hoãn khi bàn còn chỗ (thao tác lặp lại an toàn)
+  if ((await getTableQueue(table.id)).queue.length < 2) await autoAssignTables(t.id).catch(() => 0);
   const [{ queue, lastFinished }, board] = await Promise.all([getTableQueue(table.id), getBoard(t.id)]);
   const dto = toBoardDTO(board);
   const current = queue.find((m) => m.status === 'in_progress') ?? queue[0] ?? null;

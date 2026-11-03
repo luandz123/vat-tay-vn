@@ -568,7 +568,7 @@ export async function autoAssignTables(tournamentId: string, now = new Date()): 
         const s = sess.find((x) => x.id === c.sessionId);
         return {
           id: m.id, categoryId: c.id, number: m.number, status: m.status, tableId: m.tableId, queuePosition: m.queuePosition,
-          red: m.redEntryId, blue: m.blueEntryId, winner: m.winnerEntryId, finishedAt: m.finishedAt,
+          red: m.redEntryId, blue: m.blueEntryId, winner: m.winnerEntryId, finishedAt: m.finishedAt, notBefore: m.notBefore,
           bracketLive: b.status === 'locked' || b.status === 'in_progress',
           sessionStart: s?.competeStart ?? s?.weighInStart ?? null,
           categoryOrder: c.sortOrder,
@@ -589,6 +589,36 @@ export async function autoAssignTables(tournamentId: string, now = new Date()): 
     }
     return n;
   });
+}
+
+export const holdInput = z.object({ matchId: z.uuid(), minutes: z.number().int().min(1).max(60), clientEventId: z.uuid() });
+
+/**
+ * Trọng tài hoãn trận (VĐV xin nghỉ): trận rời bàn, không được gán lại trước `minutes` phút;
+ * bàn tự lấy trận khác. Chỉ trận chưa bắt đầu tính kết quả.
+ */
+export async function holdMatch(actor: Actor, raw: unknown) {
+  const v = holdInput.parse(raw);
+  const { category } = await authorizeMatch(actor, v.matchId);
+  const until = new Date(Date.now() + v.minutes * 60_000);
+  await db.transaction(async (tx) => {
+    const dup = await tx.select({ id: matchEvents.id }).from(matchEvents).where(eq(matchEvents.clientEventId, v.clientEventId));
+    if (dup.length) return;
+    const [m] = await tx.select().from(matches).where(eq(matches.id, v.matchId)).for('update');
+    if (!m) throw notFound('Không tìm thấy trận');
+    assertTable(actor, m);
+    if (m.status !== 'on_table' && m.status !== 'in_progress') throw new AppError('CONFLICT', 'Trận không còn trên bàn');
+    await tx
+      .update(matches)
+      .set({ tableId: null, queuePosition: null, status: 'ready', notBefore: until, startedAt: null, version: sql`${matches.version} + 1` })
+      .where(eq(matches.id, m.id));
+    await tx.insert(matchEvents).values({ matchId: m.id, type: 'note', payload: { hold: v.minutes, until }, clientEventId: v.clientEventId, ...actorCols(actor) });
+    await tx.insert(auditLogs).values({
+      tournamentId: category.tournamentId, ...actorCols(actor), entity: 'match', entityId: m.id, action: 'match.hold',
+      before: { tableId: m.tableId }, after: { notBefore: until },
+    });
+  });
+  return { tournamentId: category.tournamentId, until };
 }
 
 export async function setAutoAssign(userId: string, tournamentId: string, enabled: boolean) {

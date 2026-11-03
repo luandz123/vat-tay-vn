@@ -40,13 +40,12 @@ describe('tự gán bàn', () => {
     expect(out.map((o) => o.matchId).sort()).toEqual([a1.id, a3.id].sort());
   });
 
-  it('ưu tiên VĐV đã nghỉ đủ 5 phút, nhưng vẫn gán nếu không còn trận khác', () => {
-    const recent = M({ status: 'finished', red: 'tired', blue: 'q', winner: 'tired', finishedAt: new Date(NOW.getTime() - 60_000) });
-    const tiredMatch = M({ red: 'tired', blue: 'w' });
-    const freshMatch = M({});
-    const out = planAssignments([T('t1', 0)], [recent, tiredMatch, freshMatch], NOW);
-    expect(out[0]!.matchId).toBe(freshMatch.id);
-    expect(out[1]!.matchId).toBe(tiredMatch.id); // chỉ còn trận này
+  it('trận bị trọng tài hoãn chưa được gán trước giờ hẹn', () => {
+    const held = M({ number: 1, notBefore: new Date(NOW.getTime() + 5 * 60_000) });
+    const other = M({ number: 2 });
+    expect(planAssignments([T('t1', 0)], [held, other], NOW).map((a) => a.matchId)).toEqual([other.id]);
+    const later = new Date(NOW.getTime() + 6 * 60_000);
+    expect(planAssignments([T('t1', 0)], [held, other], later).map((a) => a.matchId)).toEqual([held.id, other.id]);
   });
 
   it('phiên sớm hơn trước; bàn giữ hạng đang đấu', () => {
