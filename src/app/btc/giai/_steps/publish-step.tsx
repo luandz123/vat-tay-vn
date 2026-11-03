@@ -6,7 +6,7 @@ import { publishAction } from '@/app/btc/actions';
 import { ShareTools } from '@/components/share-tools';
 import { Alert, Button, Card, buttonClass } from '@/components/ui';
 import type { ChecklistIssue } from '@/server/tournaments/checklist';
-import { STEPS } from './shared';
+import { STEPS } from './steps';
 
 export function PublishStep({
   tournamentId,

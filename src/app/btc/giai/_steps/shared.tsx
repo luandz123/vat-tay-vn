@@ -5,14 +5,9 @@ import { useState, useTransition } from 'react';
 import type { ActionResult } from '@/app/_lib/action-result';
 import { Alert, Button } from '@/components/ui';
 
-export const STEPS = [
-  { slug: 'thong-tin', title: 'Thông tin & ảnh bìa' },
-  { slug: 'hang-muc', title: 'Hạng mục' },
-  { slug: 'le-phi', title: 'Lệ phí & đợt giá' },
-  { slug: 'lich-giai-thuong', title: 'Lịch phiên & giải thưởng' },
-  { slug: 'xuat-ban', title: 'Xuất bản & chia sẻ' },
-] as const;
-export type StepSlug = (typeof STEPS)[number]['slug'];
+import type { StepSlug } from './steps';
+
+export { STEPS, type StepSlug } from './steps';
 
 let seq = 0;
 /** Khóa tạm cho dòng mới (chưa lưu) trong danh sách. */

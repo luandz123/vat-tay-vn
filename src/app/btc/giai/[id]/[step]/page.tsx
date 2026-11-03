@@ -13,7 +13,7 @@ import { InfoStep } from '../../_steps/info-step';
 import { PricingStep } from '../../_steps/pricing-step';
 import { PublishStep } from '../../_steps/publish-step';
 import { ScheduleStep } from '../../_steps/schedule-step';
-import { STEPS } from '../../_steps/shared';
+import { STEPS } from '../../_steps/steps';
 
 export const metadata: Metadata = { title: 'Tạo giải' };
 
