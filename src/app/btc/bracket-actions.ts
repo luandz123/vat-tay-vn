@@ -6,6 +6,8 @@ import { requireUser } from '@/lib/auth';
 import { publish, tournamentChannel } from '@/lib/realtime';
 import {
   assignTable,
+  autoAssignTables,
+  setAutoAssign,
   createTable,
   deleteTable,
   generateBracket,
@@ -19,6 +21,7 @@ import {
 import { toResult, type ActionResult } from '../_lib/action-result';
 
 async function done(tournamentId: string) {
+  await autoAssignTables(tournamentId).catch((e) => console.error('autoAssign', e));
   revalidatePath(`/btc/giai/${tournamentId}`, 'layout');
   await publish(tournamentChannel(tournamentId), { type: 'match.updated', matchId: '', version: 0 }).catch(() => undefined);
 }
@@ -70,4 +73,8 @@ export async function btcUndoAction(tid: string, raw: unknown) {
   return run(tid, async (u) => {
     await undoResult({ userId: u }, raw);
   });
+}
+
+export async function setAutoAssignAction(tid: string, enabled: boolean) {
+  return run(tid, (u) => setAutoAssign(u, tid, enabled));
 }

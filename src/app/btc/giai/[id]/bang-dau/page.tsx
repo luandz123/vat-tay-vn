@@ -3,6 +3,7 @@ import { LiveRefresh } from '@/components/live-refresh';
 import { requireUser } from '@/lib/auth';
 import { toBoardDTO } from '@/server/brackets/dto';
 import { getBoardForUser } from '@/server/brackets/service';
+import { requireTournament } from '@/server/tournaments/service';
 import { BracketManager } from './bracket-manager';
 
 export const metadata: Metadata = { title: 'Bảng đấu & bàn' };
@@ -11,12 +12,12 @@ export default async function BracketPage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const { hang } = await searchParams;
   const user = await requireUser();
-  const board = toBoardDTO(await getBoardForUser(user.id, id));
+  const [board, t] = await Promise.all([getBoardForUser(user.id, id).then(toBoardDTO), requireTournament(user.id, id)]);
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   return (
     <>
       <LiveRefresh tournamentId={id} />
-      <BracketManager tournamentId={id} board={board} selectedId={hang ?? board.categories[0]?.id ?? null} site={site} />
+      <BracketManager tournamentId={id} autoAssign={t.autoAssignTables} board={board} selectedId={hang ?? board.categories[0]?.id ?? null} site={site} />
     </>
   );
 }

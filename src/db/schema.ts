@@ -112,6 +112,7 @@ export const tournaments = pgTable('tournaments', {
   birthYearMax: smallint('birth_year_max'),
   weightToleranceKg: kg('weight_tolerance_kg').notNull().default('0'),
   financeVisibility: financeVisibility('finance_visibility').notNull().default('off'),
+  autoAssignTables: boolean('auto_assign_tables').notNull().default(true), // tự gán trận vào bàn trống
   registrationSeq: integer('registration_seq').notNull().default(0), // sinh mã #0083, tăng trong transaction
   codePrefix: varchar('code_prefix', { length: 8 }).notNull(),       // "PT26"
   publishedAt: timestamp('published_at', { withTimezone: true }),

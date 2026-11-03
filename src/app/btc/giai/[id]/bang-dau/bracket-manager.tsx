@@ -9,6 +9,7 @@ import {
   btcUndoAction,
   generateBracketAction,
   lockBracketAction,
+  setAutoAssignAction,
   swapEntriesAction,
 } from '@/app/btc/bracket-actions';
 import { BracketView } from '@/components/bracket-view';
@@ -17,7 +18,7 @@ import type { BoardDTO, MatchDTO } from '@/server/brackets/dto';
 import { HAND_LABEL, HAND_SHORT } from '@/server/tournaments/templates';
 import { TablesPanel } from './tables-panel';
 
-export function BracketManager({ tournamentId, board, selectedId, site }: { tournamentId: string; board: BoardDTO; selectedId: string | null; site: string }) {
+export function BracketManager({ tournamentId, autoAssign, board, selectedId, site }: { tournamentId: string; autoAssign: boolean; board: BoardDTO; selectedId: string | null; site: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string>();
   const [dragging, setDragging] = useState<string>();
@@ -77,7 +78,22 @@ export function BracketManager({ tournamentId, board, selectedId, site }: { tour
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="display text-3xl">Bảng đấu &amp; bàn</h1>
         <span className="flex items-center gap-1.5 text-sm text-success-text"><span className="size-2 rounded-full bg-success" />Khán giả xem trực tiếp</span>
+        <label className="ml-auto flex items-center gap-2 text-sm font-semibold">
+          <input
+            type="checkbox"
+            checked={autoAssign}
+            disabled={pending}
+            onChange={(e) => act(() => setAutoAssignAction(tournamentId, e.target.checked))}
+            className="size-5 accent-[var(--brand)]"
+          />
+          Tự động gán trận vào bàn trống
+        </label>
       </div>
+      {autoAssign && (
+        <p className="-mt-2 text-sm text-muted">
+          Mỗi bàn giữ 1 trận đang đấu + 1 trận chuẩn bị. Chỉ hạng đã <strong>khóa bảng</strong> mới được tự gán. VĐV vừa đấu được nghỉ ít nhất 5 phút nếu còn trận khác.
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-1.5">
         {board.categories.map((c) => (
@@ -133,7 +149,7 @@ export function BracketManager({ tournamentId, board, selectedId, site }: { tour
                     {draft && <span>· Kéo tên VĐV ở vòng 1 thả lên người khác để đổi chỗ.</span>}
                     {(cat.bracket.status === 'draft' || cat.bracket.status === 'locked') && (
                       <Button className="ml-auto min-h-9" disabled={pending} onClick={() => act(() => lockBracketAction(tournamentId, cat.bracket!.id, cat.bracket!.status === 'draft'))}>
-                        {cat.bracket.status === 'draft' ? 'Khóa bảng' : 'Mở khóa'}
+                        {cat.bracket.status === 'draft' ? 'Khóa bảng & bắt đầu thi đấu' : 'Mở khóa'}
                       </Button>
                     )}
                   </div>
@@ -182,6 +198,7 @@ export function BracketManager({ tournamentId, board, selectedId, site }: { tour
         <aside className="flex w-full flex-col gap-4 xl:w-[360px]">
           <TablesPanel tournamentId={tournamentId} board={board} site={site} />
           <Card title={`Trận chờ gán bàn (${waiting.length})`}>
+            {autoAssign && waiting.length > 0 && <p className="text-xs text-muted">Các trận này đang chờ bàn trống, hoặc thuộc hạng chưa khóa bảng.</p>}
             {waiting.length === 0 && <p className="text-sm text-muted">Không có.</p>}
             {waiting.slice(0, 20).map(({ m, c }) => (
               <div key={m.id} className="flex items-center gap-2 bg-surface-2 px-2.5 py-2 text-sm">

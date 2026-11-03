@@ -1,0 +1,1 @@
+ALTER TABLE "tournaments" ADD COLUMN "auto_assign_tables" boolean DEFAULT true NOT NULL;

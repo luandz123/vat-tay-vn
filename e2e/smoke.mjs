@@ -184,12 +184,11 @@ try {
   const link = await page.locator('code').filter({ hasText: '/trong-tai/' }).innerText();
   ok('bốc thăm, thêm bàn, tạo link tablet');
 
-  const assignFirst = async () => {
-    const sel = page.getByLabel('Gán bàn').first();
-    await sel.selectOption({ label: 'Bàn 1' });
-    await page.waitForLoadState('networkidle');
-  };
-  await assignFirst();
+  // Khóa bảng → hệ thống tự gán 2 trận (đang đấu + chuẩn bị) vào Bàn 1
+  await page.getByRole('button', { name: 'Khóa bảng & bắt đầu thi đấu' }).click();
+  await page.getByText('Trận 1 · Bàn 1').waitFor();
+  await page.getByText('Trận 2 · Bàn 1').waitFor();
+  ok('khóa bảng → tự gán 2 trận vào Bàn 1');
   const ref = await newPage(null);
   await ref.goto(link.replace(/^https?:\/\/[^/]+/, BASE));
   await ref.getByRole('button', { name: /^Thắng/ }).first().click();
@@ -202,7 +201,8 @@ try {
   await ref.getByRole('button', { name: /^Thắng/ }).first().click();
   await ref.getByText('Đã ghi kết quả').waitFor();
   await ref.getByRole('button', { name: 'Trận tiếp theo →' }).click();
-  ok('ghi lỗi, ghi lại kết quả');
+  await ref.getByText('Trận 2', { exact: false }).first().waitFor();
+  ok('ghi lỗi, ghi lại kết quả; tablet tự chuyển sang trận tiếp theo');
 
   // BTC nhập nốt các trận còn lại (Đỏ thắng)
   for (let i = 0; i < 5; i++) {

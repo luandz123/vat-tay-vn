@@ -3,7 +3,7 @@
 /** Action của tablet trọng tài: xác thực bằng mã bàn (không cần tài khoản). */
 import { revalidatePath } from 'next/cache';
 import { publish, tableChannel, tournamentChannel } from '@/lib/realtime';
-import { addMatchEvent, recordResult, tableByCode, undoResult } from '@/server/brackets/service';
+import { addMatchEvent, autoAssignTables, recordResult, tableByCode, undoResult } from '@/server/brackets/service';
 import { AppError } from '@/server/shared/errors';
 import { toResult, type ActionResult } from '../_lib/action-result';
 
@@ -12,6 +12,8 @@ async function withTable<T>(code: string, fn: (tableId: string) => Promise<{ tou
     const table = await tableByCode(code);
     if (!table) throw new AppError('FORBIDDEN', 'Link tablet không còn hiệu lực. Hãy xin BTC link mới.');
     const r = await fn(table.id);
+    // Bàn vừa trống chỗ → tự gán trận tiếp theo (nếu giải bật tự động)
+    await autoAssignTables(r.tournamentId).catch((e) => console.error('autoAssign', e));
     revalidatePath(`/trong-tai/${code}`);
     await Promise.allSettled([
       publish(tournamentChannel(r.tournamentId), { type: 'match.updated', matchId: '', version: 0 }),

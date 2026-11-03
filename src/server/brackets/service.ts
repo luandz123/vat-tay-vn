@@ -2,7 +2,7 @@
  * Bảng đấu trong DB. Khung trận lưu ở `matches` (con trỏ next/loserNext, VĐV vòng 1); trạng thái
  * luôn được tính lại bằng engine sau mỗi thay đổi rồi ghi phần khác biệt.
  */
-import { and, asc, eq, inArray, isNotNull, notInArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, notInArray, sql } from 'drizzle-orm';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { db } from '@/db';
@@ -18,6 +18,7 @@ import {
   matches,
   registrationEntries,
   registrations,
+  sessions,
   tournaments,
 } from '@/db/schema';
 import { AppError, notFound } from '../shared/errors';
@@ -539,3 +540,59 @@ export async function getMatchTallies(matchId: string): Promise<Record<string, {
 }
 
 export type { MatchState };
+
+/* ───────────── Tự động gán bàn ───────────── */
+
+/**
+ * Gán trận sẵn sàng vào bàn còn chỗ (mỗi bàn tối đa 2 trận: đang đấu + chuẩn bị).
+ * Chỉ khi giải bật `autoAssignTables`; chỉ bảng đã khóa/đang đấu. Khóa dòng giải để 2 thiết bị
+ * bấm cùng lúc không gán trùng. Trả về số trận vừa gán.
+ */
+export async function autoAssignTables(tournamentId: string, now = new Date()): Promise<number> {
+  const { planAssignments } = await import('./scheduler');
+  return db.transaction(async (tx) => {
+    const [t] = await tx.select().from(tournaments).where(eq(tournaments.id, tournamentId)).for('update');
+    if (!t?.autoAssignTables) return 0;
+    const cats = await tx.select().from(categories).where(eq(categories.tournamentId, t.id));
+    if (!cats.length) return 0;
+    const sess = await tx.select().from(sessions).where(eq(sessions.tournamentId, t.id));
+    const brs = await tx.select().from(brackets).where(inArray(brackets.categoryId, cats.map((c) => c.id)));
+    if (!brs.length) return 0;
+    const tbls = await tx.select().from(armTables).where(eq(armTables.tournamentId, t.id));
+    const ms = await tx.select().from(matches).where(inArray(matches.bracketId, brs.map((b) => b.id)));
+    const plan = planAssignments(
+      tbls.map((x) => ({ id: x.id, sortOrder: x.sortOrder, active: x.status === 'active' })),
+      ms.map((m) => {
+        const b = brs.find((x) => x.id === m.bracketId)!;
+        const c = cats.find((x) => x.id === b.categoryId)!;
+        const s = sess.find((x) => x.id === c.sessionId);
+        return {
+          id: m.id, categoryId: c.id, number: m.number, status: m.status, tableId: m.tableId, queuePosition: m.queuePosition,
+          red: m.redEntryId, blue: m.blueEntryId, winner: m.winnerEntryId, finishedAt: m.finishedAt,
+          bracketLive: b.status === 'locked' || b.status === 'in_progress',
+          sessionStart: s?.competeStart ?? s?.weighInStart ?? null,
+          categoryOrder: c.sortOrder,
+        };
+      }),
+      now,
+    );
+    let n = 0;
+    for (const a of plan) {
+      const res = await tx
+        .update(matches)
+        .set({ tableId: a.tableId, queuePosition: a.queuePosition, status: 'on_table', version: sql`${matches.version} + 1` })
+        .where(and(eq(matches.id, a.matchId), eq(matches.status, 'ready'), isNull(matches.tableId)))
+        .returning({ id: matches.id });
+      if (!res.length) continue;
+      n++;
+      await tx.insert(matchEvents).values({ matchId: a.matchId, type: 'assign_table', payload: { tableId: a.tableId, auto: true }, clientEventId: randomUUID() });
+    }
+    return n;
+  });
+}
+
+export async function setAutoAssign(userId: string, tournamentId: string, enabled: boolean) {
+  const t = await requireTournament(userId, tournamentId);
+  await db.update(tournaments).set({ autoAssignTables: enabled, updatedAt: new Date() }).where(eq(tournaments.id, t.id));
+  if (enabled) await autoAssignTables(t.id);
+}
