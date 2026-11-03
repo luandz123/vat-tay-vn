@@ -1,8 +1,9 @@
 # Kế hoạch coding MVP
 
 > **Trạng thái (02.11.2026): đã code xong Sprint 0–5 (39/39 chức năng MVP, trừ phần ghi chú bên dưới), đang ở Sprint 6 — chạy thử giải thật.**
+> Đã có kiểm thử end-to-end toàn luồng (`e2e/`), quét QR chạy cả iPhone (jsQR).
 > Còn cần làm trước khi mở cho BTC khác: SMTP riêng cho email đăng nhập (Resend), đăng nhập Google, tên miền + link ngắn,
-> kiểm thử tay trên điện thoại (trình duyệt nhúng Zalo/Facebook), đặt tài khoản admin.
+> kiểm thử tay trên điện thoại (trình duyệt nhúng Zalo/Facebook), đặt ADMIN_EMAILS.
 
 1 người + Claude Code, sprint 1 tuần. Mục tiêu: **chạy thật một giải nhỏ sau Sprint 5**, rồi hoàn thiện theo phản hồi.
 Thứ tự theo hành trình thật của một giải: tạo giải → mở đăng ký → thu tiền → ngày thi đấu → kết quả.
