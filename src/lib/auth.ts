@@ -30,7 +30,22 @@ async function serverClient() {
 export type AppUser = typeof users.$inferSelect;
 
 /** Người dùng hiện tại (bảng users của mình), tự tạo bản ghi ở lần đăng nhập đầu. */
+/**
+ * Chỉ cho test end-to-end ở máy: cookie `e2e_user=<users.id>` thay cho đăng nhập Supabase.
+ * Bật khi E2E_ALLOW_FAKE_AUTH=1 và KHÔNG chạy trên Vercel.
+ */
+async function e2eUser(): Promise<AppUser | null | undefined> {
+  if (process.env.E2E_ALLOW_FAKE_AUTH !== '1' || process.env.VERCEL) return undefined;
+  const { cookies } = await import('next/headers');
+  const id = (await cookies()).get('e2e_user')?.value;
+  if (!id) return null;
+  const [{ db }, { users }, { eq }] = await Promise.all([import('@/db'), import('@/db/schema'), import('drizzle-orm')]);
+  return (await db.query.users.findFirst({ where: eq(users.id, id) })) ?? null;
+}
+
 export async function getCurrentUser(): Promise<AppUser | null> {
+  const fake = await e2eUser();
+  if (fake !== undefined) return fake;
   const supabase = await serverClient();
   const { data } = await supabase.auth.getUser();
   const authUser = data.user;

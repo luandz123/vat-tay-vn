@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import type { ActionResult } from '@/app/_lib/action-result';
 import { Alert, Button } from '@/components/ui';
@@ -16,6 +16,9 @@ export const tempKey = () => `new-${Date.now().toString(36)}-${++seq}`;
 /** Gọi action lưu, hiển thị lỗi, chuyển bước khi thành công. */
 export function useSaver(tournamentId: string) {
   const router = useRouter();
+  const pathname = usePathname();
+  // Sau khi lưu, bước có danh sách được dựng lại (id mới) nên giữ mốc "đã lưu" trên URL
+  const savedParam = useSearchParams().get('da-luu');
   const [pending, start] = useTransition();
   const [error, setError] = useState<string>();
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -33,10 +36,10 @@ export function useSaver(tournamentId: string) {
       setFields({});
       setSavedAt(new Date());
       if (next) router.push(`/btc/giai/${tournamentId}/${next}`);
-      else router.refresh();
+      else router.replace(`${pathname}?da-luu=${Date.now()}`, { scroll: false });
     });
   }
-  return { pending, error, fields, savedAt, save };
+  return { pending, error, fields, savedAt: savedAt ?? (savedParam ? new Date(Number(savedParam)) : undefined), save };
 }
 
 export function StepFooter({
