@@ -80,10 +80,24 @@ export async function requireUser(): Promise<AppUser> {
 
 /** URL để chuyển người dùng sang đăng nhập Google. */
 export async function signInWithGoogleUrl(redirectTo: string): Promise<string> {
+  if (!(await googleEnabled())) throw new AuthError('Đăng nhập Google chưa được bật');
   const supabase = await serverClient();
   const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
-  if (error) throw error;
+  if (error) throw authError(error);
   return data.url;
+}
+
+/** Google đã được bật trong cấu hình đăng nhập chưa (đọc cấu hình công khai, cache 60 giây). */
+export async function googleEnabled(): Promise<boolean> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return false;
+  try {
+    const res = await fetch(`${url()}/auth/v1/settings`, { headers: { apikey: anonKey() }, next: { revalidate: 60 } });
+    if (!res.ok) return false;
+    const s = (await res.json()) as { external?: { google?: boolean } };
+    return !!s.external?.google;
+  } catch {
+    return false;
+  }
 }
 
 const AUTH_ERRORS: [RegExp, string][] = [

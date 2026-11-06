@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { sendMagicLink, signInWithPassword, signUpWithPassword } from '@/lib/auth';
+import { sendMagicLink, signInWithGoogleUrl, signInWithPassword, signUpWithPassword } from '@/lib/auth';
 import { toResult, type ActionResult } from '../_lib/action-result';
 
 const input = z.object({ email: z.email('Email không hợp lệ'), next: z.string().startsWith('/').default('/btc') });
@@ -30,5 +30,14 @@ export async function passwordAuth(raw: unknown): Promise<ActionResult> {
       await signUpWithPassword(v.email, v.password, v.fullName);
     } else await signInWithPassword(v.email, v.password);
     return undefined;
+  });
+}
+
+/** Bắt đầu đăng nhập Google: trả URL để trình duyệt chuyển tới (Google quay về /auth/callback). */
+export async function googleSignIn(next: string): Promise<ActionResult<{ url: string }>> {
+  return toResult(async () => {
+    const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const safe = next.startsWith('/') && !next.startsWith('//') ? next : '/btc';
+    return { url: await signInWithGoogleUrl(`${site}/auth/callback?next=${encodeURIComponent(safe)}`) };
   });
 }
