@@ -86,6 +86,21 @@ export const organizationMembers = pgTable('organization_members', {
   createdAt: createdAt(),
 }, (t) => [uniqueIndex('org_member_uq').on(t.organizationId, t.userId)]);
 
+/** Link mời thành viên BTC (gửi qua Zalo…). DB chỉ lưu SHA-256 của token. */
+export const organizationInvites = pgTable('organization_invites', {
+  id: id(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull().unique(),
+  role: orgRole('role').notNull().default('staff'),
+  note: text('note'), // ví dụ "Anh Quân – bàn cân"
+  createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+  usedBy: uuid('used_by').references(() => users.id, { onDelete: 'set null' }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [index('org_invite_org_idx').on(t.organizationId)]);
+
 /* ───────────────────────────── Giải đấu ───────────────────────────── */
 
 export const tournaments = pgTable('tournaments', {
@@ -366,7 +381,7 @@ export const matchEvents = pgTable('match_events', {
   payload: jsonb('payload'),
   clientEventId: uuid('client_event_id').notNull().unique(),
   actorUserId: uuid('actor_user_id').references(() => users.id),
-  actorTableId: uuid('actor_table_id').references(() => armTables.id),
+  actorTableId: uuid('actor_table_id').references(() => armTables.id, { onDelete: 'set null' }),
   createdAt: createdAt(),
 }, (t) => [index('match_event_match_idx').on(t.matchId, t.createdAt)]);
 
@@ -398,7 +413,7 @@ export const auditLogs = pgTable('audit_logs', {
   id: id(),
   tournamentId: uuid('tournament_id').references(() => tournaments.id, { onDelete: 'set null' }),
   actorUserId: uuid('actor_user_id').references(() => users.id),
-  actorTableId: uuid('actor_table_id').references(() => armTables.id),
+  actorTableId: uuid('actor_table_id').references(() => armTables.id, { onDelete: 'set null' }),
   entity: text('entity').notNull(),   // 'match' | 'registration' | 'payment' | ...
   entityId: uuid('entity_id').notNull(),
   action: text('action').notNull(),   // 'result.set' | 'result.undo' | 'entry.move' | ...

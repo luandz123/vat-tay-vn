@@ -260,6 +260,40 @@ try {
   await pub.goto(`${BASE}/${t.slug}`);
   await pub.getByText('📢 Lịch cân sáng chủ nhật').waitFor();
   ok('thông báo hiện banner trên trang giải');
+
+  /* 9. Thành viên BTC */
+  step('Thành viên BTC');
+  const [org] = await sql`select id from organizations`;
+  await page.goto(`${BASE}/btc/to-chuc/${org.id}/thanh-vien`);
+  await page.getByLabel('Ghi chú (để nhớ link gửi cho ai)').fill('Bàn cân');
+  await page.getByRole('button', { name: 'Tạo link mời' }).click();
+  const invite = await page.locator('code').filter({ hasText: '/moi/' }).innerText();
+  const [staff] = await sql`insert into users (auth_subject, email, full_name) values ('e2e-staff', 'staff@e2e.test', 'Nhân Viên Cân') returning id`;
+  const sp = await newPage(staff.id);
+  await sp.goto(invite.replace(/^https?:\/\/[^/]+/, BASE));
+  await sp.getByRole('button', { name: 'Tham gia Ban tổ chức' }).click();
+  await sp.waitForURL('**/btc?btc=**');
+  await sp.goto(`${BASE}/btc/giai/${t.id}/check-in`);
+  await sp.getByRole('heading', { name: /Check-in/ }).waitFor();
+  ok('nhận lời mời → thành viên vào được màn check-in');
+  await page.reload();
+  await page.getByText('Nhân Viên Cân').waitFor();
+  await sp.goto(`${BASE}/btc/giai/${t.id}`);
+  assert.equal(await sp.getByRole('button', { name: 'Xóa giải…' }).count(), 0, 'thành viên không thấy nút xóa giải');
+  ok('chủ BTC thấy thành viên mới; thành viên không có nút xóa giải');
+
+  /* 10. Xóa giải */
+  step('Xóa giải');
+  await page.goto(`${BASE}/btc/giai/${t.id}`);
+  await page.getByRole('button', { name: 'Xóa giải…' }).click();
+  await page.getByLabel(/Gõ đường dẫn giải/).fill(t.slug);
+  await page.getByRole('button', { name: 'Xóa vĩnh viễn' }).click();
+  await page.waitForURL(`${BASE}/btc`);
+  const [{ n: left }] = await sql`select count(*)::int n from tournaments`;
+  assert.equal(left, 0);
+  const pubAfter = await pub.goto(`${BASE}/${t.slug}`);
+  assert.equal(pubAfter.status(), 404);
+  ok('xóa giải → hết dữ liệu, trang giải 404');
 } catch (e) {
   console.error('\n✗ LỖI:', e.message);
   errors.push(`test: ${e.message}`);

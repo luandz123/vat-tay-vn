@@ -1,4 +1,5 @@
 import { ZodError } from 'zod';
+import { AuthError } from '@/lib/auth';
 import { AppError } from '@/server/shared/errors';
 
 export type ActionResult<T = undefined> =
@@ -18,7 +19,7 @@ export async function toResult<T>(fn: () => Promise<T>): Promise<ActionResult<T>
       }
       return { ok: false, error: 'Vui lòng kiểm tra lại các ô được đánh dấu', fields };
     }
-    if (e instanceof AppError) return { ok: false, error: e.message };
+    if (e instanceof AppError || e instanceof AuthError) return { ok: false, error: e.message };
     if (e instanceof Error && e.message === 'UNAUTHENTICATED') return { ok: false, error: 'Phiên đăng nhập đã hết, hãy đăng nhập lại' };
     console.error(e);
     return { ok: false, error: 'Có lỗi xảy ra, vui lòng thử lại' };

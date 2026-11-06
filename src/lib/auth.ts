@@ -86,6 +86,36 @@ export async function signInWithGoogleUrl(redirectTo: string): Promise<string> {
   return data.url;
 }
 
+const AUTH_ERRORS: [RegExp, string][] = [
+  [/invalid login credentials/i, 'Sai email hoặc mật khẩu'],
+  [/already (been )?registered|already exists/i, 'Email này đã có tài khoản — hãy chọn "Đăng nhập"'],
+  [/password should be at least/i, 'Mật khẩu tối thiểu 6 ký tự'],
+  [/rate limit|too many/i, 'Thử quá nhiều lần, vui lòng đợi vài phút'],
+  [/email not confirmed/i, 'Email chưa được xác nhận'],
+];
+export class AuthError extends Error {}
+const authError = (e: { message: string }) => new AuthError(AUTH_ERRORS.find(([re]) => re.test(e.message))?.[1] ?? 'Đăng nhập không thành công, thử lại sau');
+
+/** Đăng nhập bằng email + mật khẩu. */
+export async function signInWithPassword(email: string, password: string): Promise<void> {
+  const supabase = await serverClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw authError(error);
+}
+
+/** Tạo tài khoản bằng email + mật khẩu (không cần email xác nhận) rồi đăng nhập luôn. */
+export async function signUpWithPassword(email: string, password: string, fullName: string): Promise<void> {
+  const supabase = await serverClient();
+  const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+  if (error) throw authError(error);
+  // Supabase trả user không có identities khi email đã tồn tại (chống dò email)
+  if (data.user && data.user.identities?.length === 0) throw authError({ message: 'already registered' });
+  if (!data.session) {
+    const r = await supabase.auth.signInWithPassword({ email, password });
+    if (r.error) throw authError(r.error);
+  }
+}
+
 /** Gửi link đăng nhập qua email (không mật khẩu). */
 export async function sendMagicLink(email: string, redirectTo: string): Promise<void> {
   const supabase = await serverClient();

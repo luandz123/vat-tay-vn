@@ -41,6 +41,9 @@ export default async function BtcHome({ searchParams }: { searchParams: Promise<
                   {o.name}
                 </a>
               ))}
+          <a href={`/btc/to-chuc/${org.id}/thanh-vien`} className={buttonClass('secondary')}>
+            Thành viên BTC
+          </a>
           <a href={`/btc/to-chuc/${org.id}`} className={buttonClass('secondary')}>
             Thông tin BTC &amp; tài khoản nhận tiền
           </a>

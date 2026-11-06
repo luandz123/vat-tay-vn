@@ -7,8 +7,8 @@ import { LoginForm } from './login-form';
 
 export const metadata: Metadata = { title: 'Đăng nhập BTC' };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; loi?: string }> }) {
-  const { next, loi } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; loi?: string; tao?: string }> }) {
+  const { next, loi, tao } = await searchParams;
   const safeNext = next?.startsWith('/') && !next.startsWith('//') ? next : '/btc';
   if (await getCurrentUser()) redirect(safeNext);
   return (
@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         Đăng nhập <span className="text-brand-text">Ban tổ chức</span>
       </h1>
       {loi && <p className="text-sm text-brand-text">Link đăng nhập đã hết hạn hoặc không hợp lệ. Hãy gửi lại.</p>}
-      <LoginForm next={safeNext} />
+      <LoginForm next={safeNext} initialMode={tao ? 'signup' : 'signin'} />
       <p className="text-sm text-muted">Vận động viên không cần đăng nhập — đăng ký trực tiếp trên trang giải.</p>
     </main>
   );

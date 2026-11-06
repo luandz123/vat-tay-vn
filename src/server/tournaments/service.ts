@@ -3,8 +3,12 @@ import { and, asc, count, eq, inArray, like, notInArray, sql } from 'drizzle-orm
 import { db } from '@/db';
 import {
   allAroundSources,
+  auditLogs,
+  brackets,
   categories,
+  categoryResults,
   organizations,
+  payments,
   priceTiers,
   prizes,
   registrationEntries,
@@ -401,3 +405,44 @@ export async function getPublicTournament(slug: string) {
   };
 }
 export type PublicTournament = NonNullable<Awaited<ReturnType<typeof getPublicTournament>>>;
+
+/* ───────────── Xóa giải ───────────── */
+
+/** Số liệu cho hộp thoại xác nhận xóa. */
+export async function deletionImpact(userId: string, tournamentId: string) {
+  const t = await requireTournament(userId, tournamentId);
+  const [r] = await db
+    .select({
+      registrations: sql<number>`(select count(*)::int from ${registrations} where tournament_id = ${t.id})`,
+      paid: sql<number>`(select coalesce(sum(amount),0)::bigint from ${payments} where tournament_id = ${t.id} and match_status = 'matched')`,
+    })
+    .from(sql`(select 1) x`);
+  return { slug: t.slug, name: t.name, status: t.status, registrations: r!.registrations, paid: Number(r!.paid) };
+}
+
+/**
+ * Xóa hẳn giải cùng toàn bộ hạng mục, đăng ký, bảng đấu, kết quả, khoản thu/chi. Chỉ chủ BTC,
+ * phải gõ đúng đường dẫn giải. Hồ sơ VĐV (dùng chung giữa các giải) được giữ. Không hoàn tác được.
+ * Trả về key ảnh để xóa khỏi kho lưu trữ.
+ */
+export async function deleteTournament(userId: string, tournamentId: string, confirmSlug: string) {
+  const t = await requireTournament(userId, tournamentId);
+  await requireOrgRole(userId, t.organizationId, ['owner']);
+  if (confirmSlug.trim() !== t.slug) throw new AppError('INVALID', 'Đường dẫn xác nhận không khớp');
+  await db.transaction(async (tx) => {
+    // Xóa tường minh theo thứ tự phụ thuộc (trận/kết quả tham chiếu VĐV-hạng, payments không xóa dây chuyền)
+    const catIds = (await tx.select({ id: categories.id }).from(categories).where(eq(categories.tournamentId, t.id))).map((c) => c.id);
+    if (catIds.length) {
+      await tx.delete(brackets).where(inArray(brackets.categoryId, catIds)); // → matches → match_events
+      await tx.delete(categoryResults).where(inArray(categoryResults.categoryId, catIds));
+    }
+    await tx.delete(payments).where(eq(payments.tournamentId, t.id));
+    await tx.delete(registrations).where(eq(registrations.tournamentId, t.id)); // → registration_entries
+    await tx.delete(tournaments).where(eq(tournaments.id, t.id)); // → hạng, phiên, giá, giải thưởng, bàn, thông báo, chi
+    await tx.insert(auditLogs).values({
+      actorUserId: userId, entity: 'tournament', entityId: t.id, action: 'tournament.delete',
+      before: { name: t.name, slug: t.slug, status: t.status }, after: null,
+    });
+  });
+  return { slug: t.slug, imageKeys: [t.coverImageKey, t.ogImageKey].filter((k): k is string => !!k) };
+}

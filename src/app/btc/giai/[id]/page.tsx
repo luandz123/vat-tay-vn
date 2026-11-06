@@ -5,7 +5,9 @@ import { Card, buttonClass } from '@/components/ui';
 import { requireUser } from '@/lib/auth';
 import { getDashboardStats } from '@/server/manage/registrations';
 import { formatDateTime, formatVnd } from '@/server/shared/time';
-import { getTournamentForEdit } from '@/server/tournaments/service';
+import { deletionImpact, getTournamentForEdit } from '@/server/tournaments/service';
+import { listMyOrganizations } from '@/server/organizations/service';
+import { DeleteTournament } from './delete-tournament';
 import { buildSharePost } from '@/server/tournaments/share-post';
 
 export const metadata: Metadata = { title: 'Tổng quan giải' };
@@ -13,7 +15,7 @@ export const metadata: Metadata = { title: 'Tổng quan giải' };
 export default async function OverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser();
-  const [d, s] = await Promise.all([getTournamentForEdit(user.id, id), getDashboardStats(user.id, id)]);
+  const [d, s, impact, orgs] = await Promise.all([getTournamentForEdit(user.id, id), getDashboardStats(user.id, id), deletionImpact(user.id, id), listMyOrganizations(user.id)]);
   const t = d.tournament;
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   const url = `${site}/${t.slug}`;
@@ -66,6 +68,8 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
           />
         </Card>
       )}
+
+      {orgs.find((o) => o.id === t.organizationId)?.role === 'owner' && <DeleteTournament id={id} impact={impact} />}
     </main>
   );
 }
