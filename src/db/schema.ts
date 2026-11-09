@@ -245,6 +245,7 @@ export const registrations = pgTable('registrations', {
   amountPaid: money('amount_paid').notNull().default(0),
   paymentStatus: paymentStatus('payment_status').notNull().default('unpaid'),
   ageWarning: boolean('age_warning').notNull().default(false), // cảnh báo, không chặn
+  ageVerified: boolean('age_verified'), // BTC tự đánh dấu khi check-in: null = chưa kiểm tra, true hợp lệ, false không hợp lệ
   consentAt: timestamp('consent_at', { withTimezone: true }),  // đồng ý xử lý dữ liệu (NĐ 13)
   checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
   weighedKg: kg('weighed_kg'),

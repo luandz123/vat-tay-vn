@@ -3,7 +3,7 @@
 /** Server action khu quản lý giải (lớp mỏng). */
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/lib/auth';
-import { confirmWeighIn, findByTicket, getCheckinDetail, moveEntry } from '@/server/checkin/service';
+import { confirmCheckin, confirmWeighIn, findByTicket, getCheckinDetail, moveEntry } from '@/server/checkin/service';
 import { addExpense, deleteExpense, setFinanceVisibility } from '@/server/finance/service';
 import {
   cancelRegistration,
@@ -66,6 +66,9 @@ export async function checkinDetailAction(tid: string, regId: string) {
 }
 export async function confirmWeighInAction(tid: string, regId: string, kg: string) {
   return run(tid, (u) => confirmWeighIn(u, tid, regId, kg));
+}
+export async function confirmCheckinAction(tid: string, regId: string, raw: unknown) {
+  return run(tid, (u) => confirmCheckin(u, tid, regId, raw));
 }
 export async function moveEntryAction(tid: string, entryId: string, toCategoryId: string) {
   return run(tid, async (u) => {

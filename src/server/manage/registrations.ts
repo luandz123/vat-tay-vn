@@ -16,7 +16,7 @@ export async function listRegistrations(userId: string, tournamentId: string, fi
   const conds = [eq(registrations.tournamentId, t.id), ne(registrations.status, 'cancelled')];
   if (filter === 'pending') conds.push(eq(registrations.status, 'pending'));
   if (filter === 'unpaid') conds.push(inArray(registrations.paymentStatus, ['unpaid', 'partial']));
-  if (filter === 'age_warning') conds.push(eq(registrations.ageWarning, true));
+  if (filter === 'age_warning') conds.push(eq(registrations.ageVerified, false)); // BTC đã đánh dấu không hợp lệ
   if (filter === 'not_checked_in') conds.push(isNull(registrations.checkedInAt));
   const query = q.trim();
   if (query) {
@@ -156,7 +156,7 @@ export async function getDashboardStats(userId: string, tournamentId: string) {
       athletes: sql<number>`count(*)::int`,
       pending: sql<number>`count(*) filter (where ${registrations.status} = 'pending')::int`,
       unpaid: sql<number>`count(*) filter (where ${registrations.paymentStatus} in ('unpaid','partial'))::int`,
-      ageWarning: sql<number>`count(*) filter (where ${registrations.ageWarning})::int`,
+      ageWarning: sql<number>`count(*) filter (where ${registrations.ageVerified} = false)::int`, // BTC đánh dấu năm sinh không hợp lệ
       checkedIn: sql<number>`count(*) filter (where ${registrations.checkedInAt} is not null)::int`,
       due: sql<number>`coalesce(sum(${registrations.amountDue}),0)::bigint`,
       paid: sql<number>`coalesce(sum(${registrations.amountPaid}),0)::bigint`,

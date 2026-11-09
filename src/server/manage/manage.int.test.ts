@@ -4,7 +4,7 @@ vi.mock('@/db', () => import('@/test/pglite-db'));
 
 import { eq } from 'drizzle-orm';
 import { payments, registrationEntries, tournaments } from '@/db/schema';
-import { confirmWeighIn, findByTicket, getCheckinDetail, moveEntry } from '@/server/checkin/service';
+import { confirmCheckin, confirmWeighIn, findByTicket, getCheckinDetail, moveEntry } from '@/server/checkin/service';
 import { addExpense, getFinance, getPublicFinance, setFinanceVisibility } from '@/server/finance/service';
 import { getLatestBanner, postponeTournament } from '@/server/notifications/service';
 import { rotateWebhookSecret } from '@/server/organizations/webhook-secret';
@@ -32,7 +32,12 @@ describe('BTC quản lý đăng ký', () => {
     await register(f.tournament.id, athleteInput({ fullName: 'Trần Đức Anh', phone: '0987654321', birthYear: 2010, categoryIds: [f.r63] }), online);
 
     expect(await listRegistrations(f.user.id, f.tournament.id)).toHaveLength(2);
+    // Năm sinh do BTC tự đánh dấu khi check-in (không tự cảnh báo)
+    expect(await listRegistrations(f.user.id, f.tournament.id, 'age_warning')).toHaveLength(0);
+    const young = (await listRegistrations(f.user.id, f.tournament.id, 'all', 'duc anh'))[0]!;
+    await confirmCheckin(f.user.id, f.tournament.id, young.id, { ageVerified: false, results: young.entries.map((e) => ({ entryId: e.id, pass: true })) });
     expect(await listRegistrations(f.user.id, f.tournament.id, 'age_warning')).toHaveLength(1);
+    expect((await listRegistrations(f.user.id, f.tournament.id, 'not_checked_in'))).toHaveLength(1);
     expect((await listRegistrations(f.user.id, f.tournament.id, 'all', 'duc anh'))[0]!.athlete.fullName).toBe('Trần Đức Anh');
     expect(await listRegistrations(f.user.id, f.tournament.id, 'all', '0987')).toHaveLength(1);
     expect((await listRegistrations(f.user.id, f.tournament.id, 'all', a.registration.code))[0]!.entries).toHaveLength(2);

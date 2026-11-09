@@ -87,7 +87,7 @@ export function PaymentPanel({
       </div>
       <div className="flex items-center gap-3 bg-surface-2 p-3.5 text-sm" role="status">
         <span className="size-3 shrink-0 animate-pulse rounded-full bg-gold" />
-        <span>Đang chờ tiền về tài khoản BTC… Trạng thái tự cập nhật, không cần gửi ảnh chụp. Nếu BTC chưa bật đối soát tự động, BTC sẽ xác nhận tay.</span>
+        <span>Chuyển khoản xong, BTC sẽ kiểm tra tài khoản và xác nhận. Trang này tự đổi sang “Đã đóng” khi BTC xác nhận. Nên chụp lại màn hình chuyển khoản phòng khi cần đối chiếu.</span>
       </div>
       <p className="text-xs text-muted">Tiền chuyển thẳng vào tài khoản của BTC. VậtTay.vn không giữ tiền hộ.</p>
     </section>

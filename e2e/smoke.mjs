@@ -156,10 +156,9 @@ try {
   await page.goto(`${BASE}/btc/giai/${t.id}/dang-ky`);
   await page.getByRole('cell', { name: /Nguyễn Minh Khang/ }).waitFor();
   const row = page.getByRole('row').filter({ hasText: 'Nguyễn Minh Khang' });
-  await row.getByRole('button', { name: 'Thu tiền' }).click();
-  await page.getByRole('button', { name: 'Xác nhận đã thu' }).click();
-  await row.getByText('Đã đóng').waitFor();
-  ok('thu tiền mặt → Đã đóng');
+  await row.getByRole('button', { name: '✓ Đã đóng' }).click();
+  await row.getByText('Đã đóng', { exact: true }).waitFor();
+  ok('BTC bấm "Đã đóng" 1 chạm → vé Đã đóng');
   const xlsx = await page.request.get(`${BASE}/btc/giai/${t.id}/xuat-excel`);
   assert.equal(xlsx.status(), 200);
   assert.match(xlsx.headers()['content-type'], /spreadsheet/);
@@ -173,12 +172,16 @@ try {
   await page.goto(`${BASE}/btc/giai/${t.id}/check-in`);
   for (const [name] of people) {
     await page.getByRole('button', { name: new RegExp(name) }).first().click();
-    await page.getByLabel('Cân nặng thực tế (kg)').fill('62.5');
-    await page.getByText('Đạt', { exact: true }).first().waitFor();
-    await page.getByRole('button', { name: 'Xác nhận cân & check-in' }).click();
+    await page.getByRole('textbox', { name: /Cân nặng thực tế/ }).fill('62.5');
+    await page.getByText(/Nhắc: tối đa 64 kg/).first().waitFor();
+    for (const b of await page.getByRole('button', { name: 'Đạt', exact: true }).all()) await b.click();
+    await page.getByRole('button', { name: 'Năm sinh hợp lệ' }).click();
+    await page.getByRole('button', { name: 'Xác nhận check-in' }).click();
     await page.getByText(`Đã check-in ${name}`).waitFor();
   }
-  ok('4 VĐV đã cân đạt');
+  const [{ n: marked }] = await sql`select count(*)::int n from registrations where age_verified = true and checked_in_at is not null`;
+  assert.equal(marked, 4);
+  ok('4 VĐV check-in: BTC tự bấm Đạt + năm sinh hợp lệ');
 
   /* 6. Bảng đấu */
   step('Bảng đấu, bàn, trọng tài');

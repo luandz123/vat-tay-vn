@@ -2,10 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState, useTransition } from 'react';
-import { checkinDetailAction, confirmWeighInAction, findTicketAction, moveEntryAction } from '@/app/btc/manage-actions';
+import { checkinDetailAction, confirmCheckinAction, findTicketAction, moveEntryAction } from '@/app/btc/manage-actions';
 import { Alert, Button, cx } from '@/components/ui';
 import type { CheckinDetail } from '@/server/checkin/service';
-import { evaluateWeigh, parseKg } from '@/server/checkin/weigh';
+import { parseKg } from '@/server/checkin/weigh';
 import { normalizeName } from '@/server/registration/rules';
 import { formatVnd } from '@/server/shared/time';
 import { HAND_LABEL } from '@/server/tournaments/templates';
@@ -27,6 +27,8 @@ export function CheckinApp({ tournamentId, people }: { tournamentId: string; peo
   const [scan, setScan] = useState(false);
   const [detail, setDetail] = useState<CheckinDetail>();
   const [kg, setKg] = useState('');
+  const [marks, setMarks] = useState<Record<string, boolean | null>>({});
+  const [ageOk, setAgeOk] = useState<boolean | null>(null);
   const [msg, setMsg] = useState<{ tone: 'error' | 'success'; text: string }>();
   const [pending, start] = useTransition();
 
@@ -47,6 +49,8 @@ export function CheckinApp({ tournamentId, people }: { tournamentId: string; peo
         if (r.ok) {
           setDetail(r.data);
           setKg(r.data.registration.weighedKg?.toString() ?? '');
+          setMarks(Object.fromEntries(r.data.entries.map((e) => [e.id, e.weighResult === null ? null : e.weighResult === 'pass'])));
+          setAgeOk(r.data.registration.ageVerified);
         } else setMsg({ tone: 'error', text: r.error });
       }),
     [tournamentId],
@@ -65,11 +69,13 @@ export function CheckinApp({ tournamentId, people }: { tournamentId: string; peo
   );
 
   const weight = parseKg(kg);
-  const verdicts = detail && weight !== null ? detail.entries.map((e) => ({ e, v: evaluateWeigh(weight, e.category, detail.classes, detail.tournament.toleranceKg) })) : [];
   const nudge = (d: number) => setKg(((weight ?? 0) + d).toFixed(1));
   const r = detail?.registration;
   const y = detail?.athlete.birthYear;
-  const ageWarn = !!r?.ageWarning;
+  const tol = detail?.tournament.toleranceKg ?? 0;
+  const yMin = detail?.tournament.birthYearMin ?? null;
+  const yMax = detail?.tournament.birthYearMax ?? null;
+  const outOfRange = y !== undefined && ((yMin !== null && y < yMin) || (yMax !== null && y > yMax));
 
   return (
     <main className="flex flex-col gap-4 p-4 sm:p-6">
@@ -132,20 +138,38 @@ export function CheckinApp({ tournamentId, people }: { tournamentId: string; peo
                   <span className={cx('px-2.5 py-1 text-sm font-bold', r!.paymentStatus === 'paid' ? 'bg-[#14361f] text-success-text' : 'bg-[#3a2a0b] text-[#f7c948]')}>
                     {r!.paymentStatus === 'paid' ? 'Đã đóng' : `Còn thiếu ${formatVnd(r!.amountDue - r!.amountPaid)}`}
                   </span>
-                  {ageWarn && <span className="bg-[#3a2a0b] px-2.5 py-1 text-sm font-bold text-[#f7c948]">Năm sinh ngoài giới hạn</span>}
+
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 border border-line-strong p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <strong>Năm sinh {y}</strong>
+                  <span className="text-sm text-muted">
+                    Giải nhận: {yMin ?? '…'} – {yMax ?? '…'}
+                    {outOfRange && <span className="ml-2 text-gold">(ngoài khoảng của giải)</span>}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {([[true, 'Năm sinh hợp lệ'], [false, 'Không hợp lệ']] as const).map(([val, label]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      aria-pressed={ageOk === val}
+                      onClick={() => setAgeOk(ageOk === val ? null : val)}
+                      className={cx('min-h-11 border px-4 font-bold', ageOk === val ? (val ? 'border-success bg-success text-white' : 'border-brand bg-brand text-white') : 'border-line-strong')}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <span className="self-center text-xs text-muted">BTC xem CCCD/giấy tờ rồi tự đánh dấu</span>
                 </div>
               </div>
 
               <div className="flex flex-wrap items-end gap-4">
                 <label className="flex flex-col gap-2 text-sm text-fg-2">
-                  Cân nặng thực tế (kg)
-                  <input
-                    value={kg}
-                    onChange={(e) => setKg(e.target.value)}
-                    inputMode="decimal"
-                    autoFocus
-                    className="h-20 w-52 border-2 border-fg bg-bg px-4 font-display text-5xl font-bold text-fg"
-                  />
+                  <span>Cân nặng thực tế (kg) <span className="text-xs text-muted">(không bắt buộc)</span></span>
+                  <input value={kg} onChange={(e) => setKg(e.target.value)} inputMode="decimal" className="h-20 w-52 border-2 border-fg bg-bg px-4 font-display text-5xl font-bold text-fg" />
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {[-0.5, -0.1, 0.1, 0.5].map((d) => (
@@ -154,61 +178,79 @@ export function CheckinApp({ tournamentId, people }: { tournamentId: string; peo
                     </button>
                   ))}
                 </div>
-                <span className="text-sm text-muted">Dung sai giải: +{detail.tournament.toleranceKg} kg</span>
+                <span className="text-sm text-muted">Dung sai giải: +{tol} kg</span>
               </div>
 
               <div className="flex flex-col gap-2.5">
                 {detail.entries.map((e) => {
-                  const v = verdicts.find((x) => x.e.id === e.id)?.v;
-                  const ok = v?.pass;
+                  const mark = marks[e.id] ?? null;
+                  const limit = e.category.weightMaxKg === null ? null : e.category.weightMaxKg + tol;
+                  const others = detail.classes.filter((c) => c.hand === e.category.hand && c.id !== e.category.id);
                   return (
                     <div
                       key={e.id}
-                      className={cx('flex flex-wrap items-center gap-3.5 border px-4 py-3.5', v === undefined ? 'border-line-strong' : ok ? 'border-[#1f5133] bg-[#0f2418]' : 'border-[#5c1f24] bg-[#2a1214]')}
+                      className={cx('flex flex-wrap items-center gap-3 border px-4 py-3.5', mark === null ? 'border-line-strong' : mark ? 'border-[#1f5133] bg-[#0f2418]' : 'border-[#5c1f24] bg-[#2a1214]')}
                     >
-                      <div className="flex flex-1 flex-col gap-0.5">
+                      <div className="flex min-w-48 flex-1 flex-col gap-0.5">
                         <strong>{HAND_LABEL[e.category.hand]} · {e.category.label}{e.movedFromEntryId && ' (đã chuyển)'}</strong>
                         <span className="text-sm text-fg-2">
-                          {v === undefined
-                            ? 'Nhập số cân để xem gợi ý'
-                            : v.limitKg === null
-                              ? 'Hạng không giới hạn trên'
-                              : `Tối đa ${v.limitKg} kg (đã tính dung sai) · ${v.marginKg! >= 0 ? 'dư' : 'vượt'} ${Math.abs(v.marginKg!)} kg`}
+                          {limit === null ? 'Hạng không giới hạn trên' : `Nhắc: tối đa ${limit} kg (gồm dung sai)`}
+                          {weight !== null && limit !== null && <span className="text-muted"> · cân {weight} kg</span>}
                         </span>
                       </div>
-                      {v && !v.pass && v.suggestion && (
-                        <Button
-                          variant="secondary"
-                          className="bg-fg text-bg"
+                      <div className="flex gap-1.5">
+                        {([[true, 'Đạt'], [false, 'Không đạt']] as const).map(([val, label]) => (
+                          <button
+                            key={label}
+                            type="button"
+                            aria-pressed={mark === val}
+                            onClick={() => setMarks({ ...marks, [e.id]: mark === val ? null : val })}
+                            className={cx('min-h-11 min-w-20 border px-3 font-bold', mark === val ? (val ? 'border-success bg-success text-white' : 'border-brand bg-brand text-white') : 'border-line-strong')}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      {others.length > 0 && (
+                        <select
+                          aria-label={`Chuyển ${e.category.label} sang hạng khác`}
+                          value=""
                           disabled={pending}
-                          onClick={() =>
+                          onChange={(ev) => {
+                            const to = ev.target.value;
+                            if (!to) return;
                             start(async () => {
-                              const res = await moveEntryAction(tournamentId, e.id, v.suggestion!.id);
+                              const res = await moveEntryAction(tournamentId, e.id, to);
                               if (res.ok) open(detail.registration.id);
                               else setMsg({ tone: 'error', text: res.error });
-                            })
-                          }
+                            });
+                          }}
+                          className="min-h-11 border border-line-strong bg-bg px-2 text-sm"
                         >
-                          Chuyển sang {v.suggestion.label}
-                        </Button>
+                          <option value="">Chuyển hạng…</option>
+                          {others.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                        </select>
                       )}
-                      {v && <span className={cx('display text-lg', ok ? 'text-success-text' : 'text-[#ff7a7f]')}>{ok ? 'Đạt' : 'Không đạt'}</span>}
                     </div>
                   );
                 })}
               </div>
 
               <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
-                <span className="text-sm text-muted">Hệ thống chỉ gợi ý. BTC quyết định cuối cùng.</span>
+                <span className="text-sm text-muted">BTC tự đánh dấu, hệ thống không tự kết luận.</span>
                 <Button
                   variant="primary"
                   className="ml-auto"
-                  disabled={pending || weight === null}
+                  disabled={pending || (kg.trim() !== '' && weight === null)}
                   onClick={() =>
                     start(async () => {
-                      const res = await confirmWeighInAction(tournamentId, detail.registration.id, kg);
+                      const res = await confirmCheckinAction(tournamentId, detail.registration.id, {
+                        kg,
+                        ageVerified: ageOk,
+                        results: detail.entries.map((e) => ({ entryId: e.id, pass: marks[e.id] ?? null })),
+                      });
                       if (res.ok) {
-                        setMsg({ tone: 'success', text: `Đã check-in ${detail.athlete.fullName} · ${weight} kg` });
+                        setMsg({ tone: 'success', text: `Đã check-in ${detail.athlete.fullName}` });
                         setDetail(undefined);
                         setKg('');
                         router.refresh();
@@ -216,7 +258,7 @@ export function CheckinApp({ tournamentId, people }: { tournamentId: string; peo
                     })
                   }
                 >
-                  Xác nhận cân &amp; check-in
+                  Xác nhận check-in
                 </Button>
               </div>
             </>

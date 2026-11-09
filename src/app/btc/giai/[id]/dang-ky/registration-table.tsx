@@ -20,6 +20,7 @@ export interface Row {
   club: string | null;
   birthYear: number;
   ageWarning: boolean;
+  ageVerified: boolean | null;
   categories: string;
   amountDue: number;
   amountPaid: number;
@@ -88,8 +89,10 @@ export function RegistrationTable({ tournamentId, rows }: { tournamentId: string
                     {r.note && <div className="text-xs text-fg-2">Ghi chú: {r.note}</div>}
                   </td>
                   <td className="p-3">
-                    <span className={r.ageWarning ? 'text-gold' : ''}>{r.birthYear}</span>
-                    {r.ageWarning && <div className="text-xs text-gold">ngoài giới hạn</div>}
+                    <span>{r.birthYear}</span>
+                    {r.ageVerified === true && <div className="text-xs text-success-text">✓ BTC đã kiểm tra</div>}
+                    {r.ageVerified === false && <div className="text-xs font-bold text-[#ff7a7f]">✗ Không hợp lệ</div>}
+                    {r.ageVerified === null && r.ageWarning && <div className="text-xs text-muted">ngoài khoảng của giải</div>}
                   </td>
                   <td className="p-3">{r.categories || '—'}</td>
                   <td className="p-3">
@@ -106,7 +109,21 @@ export function RegistrationTable({ tournamentId, rows }: { tournamentId: string
                         <Button variant="secondary" className="min-h-9 text-sm" disabled={pending} onClick={() => act(() => setStatusAction(tournamentId, r.id, 'approved'))}>Duyệt</Button>
                       )}
                       {r.amountPaid < r.amountDue && (
-                        <Button className="min-h-9 text-sm" disabled={pending} onClick={() => setPaying(r)}>Thu tiền</Button>
+                        <>
+                          <Button
+                            variant="secondary"
+                            className="min-h-9 border-success text-sm text-success-text"
+                            disabled={pending}
+                            onClick={() => {
+                              const due = r.amountDue - r.amountPaid;
+                              if (confirm(`Đánh dấu ${r.name} đã đóng ${formatVnd(due)} (chuyển khoản)?`))
+                                act(() => recordPaymentAction(tournamentId, r.id, { amount: due, method: 'manual' }));
+                            }}
+                          >
+                            ✓ Đã đóng
+                          </Button>
+                          <Button className="min-h-9 text-sm" disabled={pending} onClick={() => setPaying(r)}>Tiền mặt / số khác…</Button>
+                        </>
                       )}
                       <Button className="min-h-9 text-sm" disabled={pending} onClick={() => setEditing(r)}>Sửa</Button>
                       <a className="flex min-h-9 items-center border border-line-strong px-3 text-sm font-semibold" href={`/ve/${r.ticketToken}`} target="_blank" rel="noreferrer">Vé</a>

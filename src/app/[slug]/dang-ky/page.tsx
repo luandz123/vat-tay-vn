@@ -26,7 +26,6 @@ export default async function RegisterPage({ params }: { params: Promise<{ slug:
       slug={slug}
       tournamentName={t.name}
       closed={closed}
-      birthYears={[t.birthYearMin, t.birthYearMax]}
       tier={tier ? { name: tier.name, singleHandPrice: tier.singleHandPrice, bothHandsPrice: tier.bothHandsPrice } : null}
       categories={d.categories
         .filter((c) => c.kind === 'weight')

@@ -81,7 +81,6 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
             {a.gender === 'male' ? 'Nam' : 'Nữ'} · Sinh {a.birthYear} · {formatPhone(a.phone)}
             {a.club && ` · ${a.club}`}
           </span>
-          {r.ageWarning && <span className="bg-[#fef3c7] px-2 py-1 text-xs font-semibold text-[#92400e]">Năm sinh ngoài giới hạn — chờ BTC xem xét</span>}
         </div>
         <div className="grid grid-cols-2 gap-3 border-t-2 border-dashed border-[#c9ccd4] px-4 py-3 text-sm">
           {entries.map((e) => (

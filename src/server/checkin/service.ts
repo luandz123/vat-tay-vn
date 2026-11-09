@@ -1,5 +1,6 @@
 /** Check-in & cân ký tại sân. Hệ thống gợi ý; BTC xác nhận và có thể chuyển hạng thủ công. */
 import { and, asc, eq } from 'drizzle-orm';
+import { z } from 'zod';
 import { db } from '@/db';
 import { athletes, auditLogs, categories, registrationEntries, registrations } from '@/db/schema';
 import { AppError, notFound } from '../shared/errors';
@@ -44,30 +45,64 @@ export async function getCheckinDetail(userId: string, tournamentId: string, reg
 }
 export type CheckinDetail = Awaited<ReturnType<typeof getCheckinDetail>>;
 
-/** Gợi ý theo số cân (không ghi DB) — dùng chung cho màn hình. */
-export function verdicts(detail: Pick<CheckinDetail, 'entries' | 'classes' | 'tournament'>, kg: number) {
-  return detail.entries.map((e) => ({ entryId: e.id, ...evaluateWeigh(kg, e.category, detail.classes, detail.tournament.toleranceKg) }));
+/** Giới hạn tham khảo từng hạng (đã cộng dung sai) — máy chỉ nhắc, BTC tự quyết Đạt/Không đạt. */
+export function limitHints(detail: Pick<CheckinDetail, 'entries' | 'classes' | 'tournament'>) {
+  return detail.entries.map((e) => ({ entryId: e.id, limitKg: e.category.weightMaxKg === null ? null : e.category.weightMaxKg + detail.tournament.toleranceKg }));
 }
 
-/** Xác nhận cân & check-in: lưu số cân, kết quả gợi ý từng hạng, thời điểm check-in. */
+export const checkinInput = z.object({
+  /** Số cân (không bắt buộc — BTC có thể chỉ đánh dấu Đạt/Không đạt). */
+  kg: z.string().optional().transform((v, ctx) => {
+    if (!v || !v.trim()) return null;
+    const n = parseKg(v);
+    if (n === null) {
+      ctx.addIssue({ code: 'custom', message: 'Số cân không hợp lệ' });
+      return z.NEVER;
+    }
+    return n;
+  }),
+  /** BTC tự đánh dấu từng hạng: true Đạt, false Không đạt, null chưa đánh dấu. */
+  results: z.array(z.object({ entryId: z.uuid(), pass: z.boolean().nullable() })).default([]),
+  /** BTC xem CCCD rồi đánh dấu: true hợp lệ, false không hợp lệ, null chưa kiểm tra. */
+  ageVerified: z.boolean().nullable().default(null),
+});
+
+/** Xác nhận check-in: lưu số cân (nếu có), dấu Đạt/Không đạt từng hạng và dấu năm sinh do BTC chọn. */
+export async function confirmCheckin(userId: string, tournamentId: string, registrationId: string, raw: unknown) {
+  const v = checkinInput.parse(raw);
+  const detail = await getCheckinDetail(userId, tournamentId, registrationId);
+  const own = new Set(detail.entries.map((e) => e.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(registrations)
+      .set({
+        weighedKg: v.kg === null ? detail.registration.weighedKg?.toFixed(2) ?? null : v.kg.toFixed(2),
+        weighedAt: v.kg === null ? detail.registration.weighedAt : new Date(),
+        weighedBy: userId,
+        ageVerified: v.ageVerified,
+        checkedInAt: detail.registration.checkedInAt ?? new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(registrations.id, registrationId));
+    for (const r of v.results) {
+      if (!own.has(r.entryId)) continue;
+      await tx.update(registrationEntries).set({ weighResult: r.pass === null ? null : r.pass ? 'pass' : 'fail' }).where(eq(registrationEntries.id, r.entryId));
+    }
+    await tx.insert(auditLogs).values({
+      tournamentId, actorUserId: userId, entity: 'registration', entityId: registrationId, action: 'checkin.confirm',
+      before: { weighedKg: detail.registration.weighedKg, ageVerified: detail.registration.ageVerified },
+      after: { weighedKg: v.kg, ageVerified: v.ageVerified, results: v.results },
+    });
+  });
+}
+
+/** Giữ tương thích: cân + tự đánh dấu theo giới hạn (dùng trong test và dữ liệu mẫu). */
 export async function confirmWeighIn(userId: string, tournamentId: string, registrationId: string, kgInput: string) {
   const kg = parseKg(kgInput);
   if (kg === null) throw new AppError('INVALID', 'Số cân không hợp lệ');
   const detail = await getCheckinDetail(userId, tournamentId, registrationId);
-  const vs = verdicts(detail, kg);
-  await db.transaction(async (tx) => {
-    await tx
-      .update(registrations)
-      .set({ weighedKg: kg.toFixed(2), weighedAt: new Date(), weighedBy: userId, checkedInAt: detail.registration.checkedInAt ?? new Date(), updatedAt: new Date() })
-      .where(eq(registrations.id, registrationId));
-    for (const v of vs) {
-      await tx.update(registrationEntries).set({ weighResult: v.pass ? 'pass' : 'fail' }).where(eq(registrationEntries.id, v.entryId));
-    }
-    await tx.insert(auditLogs).values({
-      tournamentId, actorUserId: userId, entity: 'registration', entityId: registrationId, action: 'checkin.weigh',
-      before: { weighedKg: detail.registration.weighedKg }, after: { weighedKg: kg, results: vs.map((v) => ({ entryId: v.entryId, pass: v.pass })) },
-    });
-  });
+  const vs = detail.entries.map((e) => ({ entryId: e.id, ...evaluateWeigh(kg, e.category, detail.classes, detail.tournament.toleranceKg) }));
+  await confirmCheckin(userId, tournamentId, registrationId, { kg: kgInput, results: vs.map((x) => ({ entryId: x.entryId, pass: x.pass })), ageVerified: detail.registration.ageVerified });
   return vs;
 }
 

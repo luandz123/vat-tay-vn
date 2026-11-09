@@ -25,14 +25,12 @@ export function RegisterForm({
   closed,
   categories,
   tier,
-  birthYears,
 }: {
   slug: string;
   tournamentName: string;
   closed: boolean;
   categories: Cat[];
   tier: { name: string; singleHandPrice: number; bothHandsPrice: number | null } | null;
-  birthYears: [number | null, number | null];
 }) {
   const router = useRouter();
   const [v, setV] = useState({ fullName: '', phone: '', email: '', birthYear: '', club: '', website: '' });
@@ -51,14 +49,6 @@ export function RegisterForm({
     .filter((c): c is Cat => !!c);
   const total = tier ? totalFee(chosen.map((c) => ({ hand: c.hand })), tier) : 0;
   const combo = chosen.length === 2 && tier?.bothHandsPrice != null && total < 2 * tier.singleHandPrice;
-  const year = Number(v.birthYear);
-  const ageWarn =
-    v.birthYear.length === 4 &&
-    chosen.some((c) => {
-      const min = c.birthYearMin ?? birthYears[0];
-      const max = c.birthYearMax ?? birthYears[1];
-      return (min !== null && year < min) || (max !== null && year > max);
-    });
 
   function submit() {
     setError(undefined);
@@ -113,7 +103,7 @@ export function RegisterForm({
               inputMode="numeric"
               maxLength={4}
               required
-              className={cx('flex-1', ageWarn && '[&_input]:border-gold')}
+              className="flex-1"
             />
             <div className="flex flex-1 flex-col gap-1.5 text-sm text-fg-2">
               <span id="gt">Giới tính</span>
@@ -139,11 +129,7 @@ export function RegisterForm({
           <Input label="CLB / Đội (không bắt buộc)" value={v.club} onChange={set('club')} />
           <Input label="Email (không bắt buộc, để nhận vé)" error={fields.email} value={v.email} onChange={set('email')} type="email" autoComplete="email" />
           <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" value={v.website} onChange={set('website')} name="website" />
-          {ageWarn && (
-            <Alert>
-              Năm sinh {v.birthYear} nằm ngoài giới hạn của hạng đã chọn. Bạn vẫn đăng ký được, BTC sẽ xem xét khi duyệt.
-            </Alert>
-          )}
+
         </section>
 
         <section className="flex flex-col gap-3.5 px-4 pt-7">

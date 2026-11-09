@@ -57,6 +57,13 @@
       "when": 1793959606148,
       "tag": "0007_actor_table_set_null",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794230506308,
+      "tag": "0008_age_verified",
+      "breakpoints": true
     }
   ]
 }

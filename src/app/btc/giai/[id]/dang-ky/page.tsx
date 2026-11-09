@@ -15,7 +15,7 @@ const TABS: { key: RegistrationFilter; label: string }[] = [
   { key: 'all', label: 'Tất cả' },
   { key: 'pending', label: 'Chờ duyệt' },
   { key: 'unpaid', label: 'Chưa đóng đủ' },
-  { key: 'age_warning', label: 'Cảnh báo năm sinh' },
+  { key: 'age_warning', label: 'Năm sinh không hợp lệ' },
   { key: 'not_checked_in', label: 'Chưa check-in' },
 ];
 
@@ -82,6 +82,7 @@ export default async function RegistrationsPage({ params, searchParams }: { para
           club: r.athlete.club,
           birthYear: r.athlete.birthYear,
           ageWarning: r.ageWarning,
+          ageVerified: r.ageVerified,
           categories: r.entries.map((e) => `${e.category.hand === 'right' ? 'P' : 'T'} ${e.category.label}`).join(' · '),
           amountDue: r.amountDue,
           amountPaid: r.amountPaid,

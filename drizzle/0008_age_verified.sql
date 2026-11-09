@@ -1,0 +1,1 @@
+ALTER TABLE "registrations" ADD COLUMN "age_verified" boolean;

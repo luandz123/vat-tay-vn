@@ -22,7 +22,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ id: s
   const kpis = [
     { l: 'VĐV đăng ký', v: `${s.athletes}${s.capacity ? ` / ${s.capacity}` : ''}`, sub: `${s.entries} lượt hạng mục` },
     { l: 'Đã thu', v: formatVnd(s.paid), sub: `/ ${formatVnd(s.due)} phải thu` },
-    { l: 'Chờ duyệt', v: String(s.pending), sub: `${s.ageWarning} cảnh báo năm sinh`, href: `/btc/giai/${id}/dang-ky?loc=pending` },
+    { l: 'Chờ duyệt', v: String(s.pending), sub: `${s.ageWarning} năm sinh không hợp lệ`, href: `/btc/giai/${id}/dang-ky?loc=pending` },
     { l: 'Chưa đóng đủ', v: String(s.unpaid), sub: s.unmatched ? `${s.unmatched} giao dịch chờ ghép` : 'Không có giao dịch lạ', href: `/btc/giai/${id}/dang-ky?loc=unpaid` },
   ];
   return (
