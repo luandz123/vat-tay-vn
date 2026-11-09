@@ -12,3 +12,10 @@ describe('slug', () => {
   it('tiền tố mã', () => expect(codePrefixFrom('Giải vật tay PTIT mở rộng', 2026)).toBe('PT26'));
   it('tiền tố mặc định', () => expect(codePrefixFrom('Giải vật tay', 2027)).toBe('VT27'));
 });
+
+import { finalizeSlug, slugTyping } from './slug';
+describe('gõ link', () => {
+  it('giữ dấu gạch cuối khi đang gõ', () => expect(slugTyping('ptit-')).toBe('ptit-'));
+  it('gõ có dấu và khoảng trắng', () => expect(slugTyping('Giải Đông Đô ')).toBe('giai-dong-do-'));
+  it('chốt khi lưu', () => expect(finalizeSlug('ptit-2026-')).toBe('ptit-2026'));
+});

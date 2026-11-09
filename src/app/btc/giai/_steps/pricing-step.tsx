@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { savePricingAction } from '@/app/btc/actions';
+import { DateTimePicker, PriceInput } from '@/components/pickers';
 import { Alert, Button, Card, Field, inputClass } from '@/components/ui';
 import { StepFooter, tempKey, useSaver } from './shared';
 
@@ -14,10 +15,6 @@ interface Tier {
   bothHandsPrice: string;
 }
 
-const fmt = (v: string) => {
-  const n = Number(v.replace(/\D/g, ''));
-  return v.trim() === '' || !Number.isFinite(n) ? '' : `${new Intl.NumberFormat('vi-VN').format(n)}đ`;
-};
 
 export function PricingStep({
   tournamentId,
@@ -73,21 +70,29 @@ export function PricingStep({
             </Button>
           }
         >
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="Tên đợt" error={err(i, 'name')}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Tên đợt" required error={err(i, 'name')}>
               <input className={inputClass} value={t.name} onChange={(e) => update(t.key, { name: e.target.value })} />
             </Field>
-            <Field label="Giá 1 tay" error={err(i, 'singleHandPrice')} hint={fmt(t.singleHandPrice)}>
-              <input className={inputClass} inputMode="numeric" value={t.singleHandPrice} onChange={(e) => update(t.key, { singleHandPrice: e.target.value })} placeholder="150000" />
-            </Field>
-            <Field label="Giá combo 2 tay" error={err(i, 'bothHandsPrice')} hint={fmt(t.bothHandsPrice) || 'Bỏ trống = không có combo'}>
-              <input className={inputClass} inputMode="numeric" value={t.bothHandsPrice} onChange={(e) => update(t.key, { bothHandsPrice: e.target.value })} placeholder="250000" />
-            </Field>
-            {t.kind === 'online' && (
-              <Field label="Áp dụng đến" error={err(i, 'validUntil')} hint="Bỏ trống = đến hạn đăng ký">
-                <input type="datetime-local" className={inputClass} value={t.validUntil} onChange={(e) => update(t.key, { validUntil: e.target.value })} />
+            {t.kind === 'online' ? (
+              <Field label="Áp dụng đến" optional error={err(i, 'validUntil')} hint="Bỏ trống = đến hạn đăng ký. Dùng cho giá đăng ký sớm.">
+                <DateTimePicker label="Áp dụng đến" value={t.validUntil} defaultTime="23:45" onChange={(x) => update(t.key, { validUntil: x })} />
               </Field>
+            ) : (
+              <div />
             )}
+            <Field label="Giá 1 tay" required error={err(i, 'singleHandPrice')}>
+              <PriceInput label="Giá 1 tay" value={t.singleHandPrice} onChange={(x) => update(t.key, { singleHandPrice: x })} />
+            </Field>
+            <Field label="Giá combo 2 tay" optional error={err(i, 'bothHandsPrice')} hint="Bỏ trống = không có giá combo (2 tay tính bằng 2 lần giá 1 tay)">
+              <PriceInput
+                label="Giá combo 2 tay"
+                allowEmpty
+                presets={[100000, 150000, 200000, 250000, 300000, 400000, 500000]}
+                value={t.bothHandsPrice}
+                onChange={(x) => update(t.key, { bothHandsPrice: x })}
+              />
+            </Field>
           </div>
         </Card>
       ))}

@@ -26,22 +26,34 @@ export function Button({ variant = 'secondary', className, ...p }: ComponentProp
 export const inputClass =
   'min-h-11 w-full border border-line-strong bg-bg px-3 text-base text-fg placeholder:text-muted focus:outline-2 focus:outline-brand-text';
 
+/**
+ * Ô nhập có nhãn. `required` → dấu * đỏ; `optional` → "(không bắt buộc)". Mỗi ô trong form tạo giải
+ * nên đánh dấu một trong hai để người dùng biết rõ.
+ */
 export function Field({
   label,
   error,
   hint,
   children,
   className,
+  required,
+  optional,
 }: {
   label: string;
   error?: string;
   hint?: ReactNode;
   children: ReactNode;
   className?: string;
+  required?: boolean;
+  optional?: boolean;
 }) {
   return (
     <label className={cx('flex flex-col gap-1.5 text-sm text-fg-2', className)}>
-      <span>{label}</span>
+      <span>
+        {label}
+        {required && <span className="ml-0.5 font-bold text-brand-text" aria-label="bắt buộc">*</span>}
+        {optional && <span className="ml-1 text-xs text-muted">(không bắt buộc)</span>}
+      </span>
       {children}
       {hint && !error && <span className="text-xs text-muted">{hint}</span>}
       {error && <span className="text-xs font-semibold text-brand-text">{error}</span>}

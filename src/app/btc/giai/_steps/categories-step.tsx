@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { saveCategoriesAction } from '@/app/btc/actions';
-import { Alert, Button, Card, Field, inputClass } from '@/components/ui';
+import { Alert, Button, Card, inputClass } from '@/components/ui';
 import {
   GENDER_LABEL,
   HAND_LABEL,
@@ -49,6 +49,31 @@ export function CategoriesStep({
   const { pending, error, fields, savedAt, save } = useSaver(tournamentId);
   const weights = rows.filter((r) => r.kind === 'weight');
   const allArounds = rows.filter((r) => r.kind === 'all_around');
+  const initialAaHands = [...new Set(allArounds.map((a) => a.hand))];
+  const [aaHands, setAaHands] = useState<'none' | 'left' | 'right' | 'both'>(
+    initialAaHands.length === 2 ? 'both' : initialAaHands.length === 1 ? initialAaHands[0]! : 'none',
+  );
+  const [aaPlace, setAaPlace] = useState<number>(allArounds[0]?.allAroundMaxPlace ?? 1);
+
+  /** Hạng Toàn năng sinh tự động: mỗi tay đã chọn × mỗi giới tính có hạng cân → 1 hạng, nguồn = các hạng cân đó. */
+  function buildAllArounds(): Row[] {
+    const hs: Hand[] = aaHands === 'both' ? ['right', 'left'] : aaHands === 'none' ? [] : [aaHands];
+    const out: Row[] = [];
+    for (const h of hs) {
+      for (const g of ['male', 'female', 'open'] as const) {
+        const sources = weights.filter((w) => w.hand === h && w.gender === g);
+        if (!sources.length) continue;
+        const existing = allArounds.find((a) => a.hand === h && a.gender === g);
+        out.push({
+          ...toRow({
+            key: existing?.key ?? tempKey(), kind: 'all_around', hand: h, gender: g, label: 'Toàn năng', weightMinKg: null, weightMaxKg: null,
+            birthYearMin: null, birthYearMax: null, capacity: null, sessionKey: null, allAroundMaxPlace: aaPlace, allAroundSourceKeys: sources.map((w) => w.key),
+          }),
+        });
+      }
+    }
+    return out;
+  }
   const update = (key: string, patch: Partial<Row>) => setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const remove = (key: string) =>
     setRows((rs) => rs.filter((r) => r.key !== key).map((r) => ({ ...r, allAroundSourceKeys: r.allAroundSourceKeys.filter((k) => k !== key) })));
@@ -59,16 +84,6 @@ export function CategoriesStep({
       toRow({
         key: tempKey(), kind: 'weight', hand: 'right', gender: 'male', label: '', weightMinKg: null, weightMaxKg: null,
         birthYearMin: null, birthYearMax: null, capacity: null, sessionKey: null, allAroundMaxPlace: null, allAroundSourceKeys: [],
-      }),
-    ]);
-  }
-  function addAllAround() {
-    setRows((rs) => [
-      ...rs,
-      toRow({
-        key: tempKey(), kind: 'all_around', hand: 'right', gender: 'male', label: 'Toàn năng', weightMinKg: null, weightMaxKg: null,
-        birthYearMin: null, birthYearMax: null, capacity: null, sessionKey: null, allAroundMaxPlace: 1,
-        allAroundSourceKeys: weights.filter((w) => w.hand === 'right' && w.gender === 'male').map((w) => w.key),
       }),
     ]);
   }
@@ -125,6 +140,9 @@ export function CategoriesStep({
           </span>
         }
       >
+        <p className="-mt-2 text-xs text-muted">
+          <span className="text-brand-text">*</span> bắt buộc. Cân, năm sinh riêng và giới hạn suất không bắt buộc (bỏ trống = không giới hạn).
+        </p>
         {weights.length === 0 ? (
           <p className="text-fg-2">Chưa có hạng nào. Bấm một mẫu ở trên để bắt đầu.</p>
         ) : (
@@ -132,11 +150,11 @@ export function CategoriesStep({
             <table className="w-full min-w-[760px] border-collapse text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-muted">
-                  <th className="p-2">Tay</th>
-                  <th className="p-2">Giới tính</th>
+                  <th className="p-2">Tay <span className="text-brand-text">*</span></th>
+                  <th className="p-2">Giới tính <span className="text-brand-text">*</span></th>
                   <th className="p-2">Trên (kg)</th>
                   <th className="p-2">Đến (kg)</th>
-                  <th className="p-2">Tên hạng</th>
+                  <th className="p-2">Tên hạng <span className="text-brand-text">*</span></th>
                   <th className="p-2">Năm sinh (riêng)</th>
                   <th className="p-2">Suất</th>
                   <th className="p-2"><span className="sr-only">Xóa</span></th>
@@ -190,58 +208,47 @@ export function CategoriesStep({
         )}
       </Card>
 
-      <Card title="Hạng Toàn năng tự động" actions={<Button onClick={addAllAround}>+ Thêm hạng Toàn năng</Button>}>
-        <p className="text-sm text-fg-2">Khi các hạng nguồn có kết quả, hệ thống tự đưa VĐV đạt huy chương đã chọn vào bảng Toàn năng. Không thu thêm phí.</p>
-        {allArounds.map((a) => (
-          <div key={a.key} className="flex flex-col gap-3 border border-line-strong p-3">
-            <div className="flex flex-wrap items-end gap-3">
-              <Field label="Tên">
-                <input className={`${cell} w-40`} value={a.label} onChange={(e) => update(a.key, { label: e.target.value })} />
-              </Field>
-              <Field label="Tay">
-                <select className={cell} value={a.hand} onChange={(e) => update(a.key, { hand: e.target.value as Hand })}>
-                  <option value="right">Phải</option>
-                  <option value="left">Trái</option>
-                </select>
-              </Field>
-              <Field label="Giới tính">
-                <select className={cell} value={a.gender} onChange={(e) => update(a.key, { gender: e.target.value as Row['gender'] })}>
-                  <option value="male">Nam</option>
-                  <option value="female">Nữ</option>
-                  <option value="open">Mở</option>
-                </select>
-              </Field>
-              <Field label="Lấy huy chương">
-                <select className={cell} value={a.allAroundMaxPlace ?? 1} onChange={(e) => update(a.key, { allAroundMaxPlace: Number(e.target.value) })}>
-                  <option value={1}>Chỉ HCV</option>
-                  <option value={2}>HCV + HCB</option>
-                  <option value={3}>HCV + HCB + HCĐ</option>
-                </select>
-              </Field>
-              <Button className="ml-auto" onClick={() => remove(a.key)}>
-                Xóa
-              </Button>
-            </div>
-            <fieldset className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-              <legend className="mb-2 text-fg-2">Từ các hạng:</legend>
-              {weights.map((w) => (
-                <label key={w.key} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="size-5 accent-[var(--brand)]"
-                    checked={a.allAroundSourceKeys.includes(w.key)}
-                    onChange={(e) =>
-                      update(a.key, {
-                        allAroundSourceKeys: e.target.checked ? [...a.allAroundSourceKeys, w.key] : a.allAroundSourceKeys.filter((k) => k !== w.key),
-                      })
-                    }
-                  />
-                  {HAND_LABEL[w.hand]} · {GENDER_LABEL[w.gender]} {w.label || '(chưa đặt tên)'}
-                </label>
-              ))}
-            </fieldset>
+      <Card title="Hạng Toàn năng" actions={<span className="text-sm text-muted">không bắt buộc</span>}>
+        <p className="text-sm text-fg-2">
+          Khi các hạng cân có kết quả, hệ thống tự đưa VĐV đạt huy chương vào bảng Toàn năng (không thu thêm phí). Nam và nữ được tách riêng.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {([['none', 'Không có'], ['right', 'Tay phải'], ['left', 'Tay trái'], ['both', 'Cả 2 tay']] as const).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              aria-pressed={aaHands === k}
+              onClick={() => setAaHands(k)}
+              className={`min-h-11 border px-4 font-semibold ${aaHands === k ? 'border-brand bg-brand text-white' : 'border-line-strong text-fg'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {aaHands !== 'none' && (
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-fg-2">Lấy VĐV đạt:</span>
+            {([[1, 'HCV'], [2, 'HCV + HCB'], [3, 'HCV + HCB + HCĐ']] as const).map(([n, label]) => (
+              <button
+                key={n}
+                type="button"
+                aria-pressed={aaPlace === n}
+                onClick={() => setAaPlace(n)}
+                className={`min-h-10 border px-3 font-semibold ${aaPlace === n ? 'border-gold bg-gold text-bg' : 'border-line-strong text-fg'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        ))}
+        )}
+        {aaHands !== 'none' && (
+          <p className="text-xs text-muted">
+            Sẽ tạo:{' '}
+            {buildAllArounds()
+              .map((a) => `Toàn năng ${HAND_LABEL[a.hand].toLowerCase()} ${GENDER_LABEL[a.gender].toLowerCase()} (từ ${a.allAroundSourceKeys.length} hạng)`)
+              .join(' · ') || 'chưa có hạng cân phù hợp — hãy thêm hạng cân trước'}
+          </p>
+        )}
       </Card>
 
       {fieldError && <Alert tone="error">{fieldError}</Alert>}
@@ -253,7 +260,7 @@ export function CategoriesStep({
         pending={pending}
         error={error}
         savedAt={savedAt}
-        onSave={(next) => save(() => saveCategoriesAction(tournamentId, { categories: rows }), next)}
+        onSave={(next) => save(() => saveCategoriesAction(tournamentId, { categories: [...weights, ...buildAllArounds()] }), next)}
       />
     </div>
   );

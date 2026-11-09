@@ -123,6 +123,7 @@ export default async function WizardPage({ params }: { params: Promise<{ id: str
         <ScheduleStep
           key={[...d.sessions.map((x) => x.id), ...d.prizes.map((x) => x.id)].join()}
           tournamentId={id}
+          tournamentDate={toVnLocal(t.startsAt).slice(0, 10)}
           categories={d.categories.map((c) => ({ id: c.id, label: c.label, hand: c.hand, gender: c.gender, kind: c.kind, sessionId: c.sessionId }))}
           initialSessions={d.sessions.map((s) => ({
             key: s.id,

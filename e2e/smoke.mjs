@@ -52,7 +52,7 @@ try {
   step('Tạo Ban tổ chức');
   await page.goto(`${BASE}/btc`);
   await page.waitForURL('**/btc/to-chuc/moi');
-  await page.getByLabel('Tên BTC / CLB *').fill('CLB Vật tay E2E');
+  await page.getByLabel('Tên BTC / CLB').fill('CLB Vật tay E2E');
   await page.getByLabel('Số điện thoại').fill('0912345678');
   await page.getByLabel('Ngân hàng').selectOption({ label: 'Vietcombank' });
   await page.getByLabel('Số tài khoản').fill('0123456789');
@@ -66,27 +66,34 @@ try {
   await page.getByLabel('Tên giải').fill('Giải vật tay E2E 2026');
   await page.getByRole('button', { name: 'Bắt đầu →' }).click();
   await page.waitForURL('**/thong-tin');
-  await page.getByLabel('Bắt đầu *').fill('2026-12-15T07:00');
-  await page.getByLabel('Địa điểm *').fill('Nhà thi đấu E2E');
-  await page.getByLabel('Hạn đăng ký online').fill('2026-12-12T23:59');
-  await page.getByLabel('Năm sinh từ').fill('1990');
-  await page.getByLabel('Năm sinh đến').fill('2008');
-  await page.getByLabel('Dung sai cân (kg)').fill('1');
+  await page.getByLabel('Ngày thi đấu').fill('2026-12-15');
+  await page.getByLabel('Giờ bắt đầu').selectOption('07:00');
+  await page.getByLabel('Địa điểm', { exact: false }).first().fill('Nhà thi đấu E2E');
+  await page.getByLabel('Hạn đăng ký – ngày').fill('2026-12-12');
+  await page.getByLabel('Năm sinh từ').selectOption('1990');
+  await page.getByLabel('đến', { exact: false }).last().selectOption('2008');
+  await page.getByLabel('Dung sai cân').selectOption('1');
+  await page.getByLabel('Link trang giải', { exact: false }).fill('Giải E2E 2026 ');
+  assert.equal(await page.getByLabel('Link trang giải', { exact: false }).inputValue(), 'giai-e2e-2026-');
   await page.getByLabel('Lưu ý cho VĐV (móng tay, trang sức, giấy tờ…)').fill('Cắt móng tay\nKhông đeo nhẫn');
   await page.getByRole('button', { name: 'Tiếp: Hạng mục →' }).click();
   await page.waitForURL('**/hang-muc');
   ok('bước 1');
 
   await page.getByRole('button', { name: '+ Nam phổ thông 57/63/73/+73' }).click();
+  await page.getByRole('button', { name: 'Cả 2 tay' }).click();
+  await page.getByText(/Sẽ tạo: Toàn năng tay phải nam/).waitFor();
   await page.getByRole('button', { name: 'Lưu nháp' }).click();
   await page.getByText(/Đã lưu lúc/).waitFor();
   await page.getByRole('button', { name: 'Lưu nháp' }).click(); // lưu lần 2 không được nhân đôi hạng
   await page.getByText(/Đã lưu lúc/).waitFor();
   await page.getByRole('button', { name: 'Tiếp: Lệ phí →' }).click();
   await page.waitForURL('**/le-phi');
-  const [{ n: catCount }] = await sql`select count(*)::int n from categories`;
+  const [{ n: catCount }] = await sql`select count(*)::int n from categories where kind = 'weight'`;
   assert.equal(catCount, 8, 'lưu 2 lần vẫn 8 hạng');
-  ok('bước 2: 8 hạng, lưu lại không bị trùng');
+  const aa = await sql`select hand, (select count(*)::int from all_around_sources s where s.all_around_category_id = c.id) src from categories c where kind = 'all_around' order by hand`;
+  assert.deepEqual(aa.map((r) => [r.hand, r.src]), [['left', 4], ['right', 4]], 'Toàn năng cả 2 tay, mỗi tay 4 hạng nguồn');
+  ok('bước 2: 8 hạng cân + Toàn năng 2 tay, lưu lại không bị trùng');
 
   const singles = page.getByLabel('Giá 1 tay');
   const combos = page.getByLabel('Giá combo 2 tay');
@@ -98,6 +105,7 @@ try {
   await page.waitForURL('**/lich-giai-thuong');
   ok('bước 3');
 
+  await page.getByRole('button', { name: 'Chia phiên', exact: true }).click();
   await page.getByRole('button', { name: 'Sáng tay trái · chiều tay phải' }).click();
   await page.getByRole('button', { name: 'Tiếp: Xuất bản →' }).click();
   await page.waitForURL('**/xuat-ban');
@@ -286,7 +294,7 @@ try {
   step('Xóa giải');
   await page.goto(`${BASE}/btc/giai/${t.id}`);
   await page.getByRole('button', { name: 'Xóa giải…' }).click();
-  await page.getByLabel(/Gõ đường dẫn giải/).fill(t.slug);
+  await page.getByLabel(/Gõ link trang giải/).fill(t.slug);
   await page.getByRole('button', { name: 'Xóa vĩnh viễn' }).click();
   await page.waitForURL(`${BASE}/btc`);
   const [{ n: left }] = await sql`select count(*)::int n from tournaments`;

@@ -241,7 +241,10 @@ export function RegisterForm({
 function Input({ label, error, className, ...p }: React.ComponentProps<'input'> & { label: string; error?: string }) {
   return (
     <label className={cx('flex flex-col gap-1.5 text-sm text-fg-2', className)}>
-      {label}
+      <span>
+        {label}
+        {p.required && <span className="ml-0.5 font-bold text-brand-text" aria-hidden="true">*</span>}
+      </span>
       <input {...p} className={cx(inputClass, 'min-h-12 bg-surface font-medium', error && 'border-brand')} />
       {error && <span className="text-xs font-semibold text-brand-text">{error}</span>}
     </label>
