@@ -137,7 +137,7 @@ try {
     await pub.goto(`${BASE}/${t.slug}/dang-ky`);
     await pub.getByLabel('Họ và tên').fill(name);
     await pub.getByLabel('Số điện thoại (Zalo)').fill(phone);
-    await pub.getByLabel('Năm sinh', { exact: true }).fill('2000');
+    await pub.getByRole('textbox', { name: /^Năm sinh/ }).fill('2000');
     const right = pub.locator('fieldset').filter({ hasText: 'Tay phải' });
     await right.getByRole('button', { name: '-63kg' }).click();
     if (both) await pub.locator('fieldset').filter({ hasText: 'Tay trái' }).getByRole('button', { name: '-63kg' }).click();
