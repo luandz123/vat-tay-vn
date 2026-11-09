@@ -133,19 +133,31 @@ try {
     ['Phạm Quốc Tùng', '0981000004', false],
   ];
   const tickets = [];
+  // Chưa đăng nhập → trang đăng ký yêu cầu đăng nhập
+  await pub.goto(`${BASE}/${t.slug}/dang-ky`);
+  await pub.getByRole('heading', { name: /Đăng nhập để/ }).waitFor();
+  ok('chưa đăng nhập → trang đăng ký yêu cầu đăng nhập');
   for (const [name, phone, both] of people) {
-    await pub.goto(`${BASE}/${t.slug}/dang-ky`);
-    await pub.getByLabel('Họ và tên').fill(name);
-    await pub.getByLabel('Số điện thoại (Zalo)').fill(phone);
-    await pub.getByRole('textbox', { name: /^Năm sinh/ }).fill('2000');
-    const right = pub.locator('fieldset').filter({ hasText: 'Tay phải' });
+    const [acc] = await sql`insert into users (auth_subject, email, full_name) values (${'e2e-' + phone}, ${phone + '@e2e.test'}, ${name}) returning id`;
+    const vdv = await newPage(acc.id);
+    await vdv.goto(`${BASE}/${t.slug}/dang-ky`);
+    assert.equal(await vdv.getByLabel('Họ và tên').inputValue(), name, 'tự điền họ tên từ tài khoản');
+    await vdv.getByLabel('Họ và tên').fill(name);
+    await vdv.getByLabel('Số điện thoại (Zalo)').fill(phone);
+    await vdv.getByRole('textbox', { name: /^Năm sinh/ }).fill('2000');
+    const right = vdv.locator('fieldset').filter({ hasText: 'Tay phải' });
     await right.getByRole('button', { name: '-63kg' }).click();
-    if (both) await pub.locator('fieldset').filter({ hasText: 'Tay trái' }).getByRole('button', { name: '-63kg' }).click();
-    await pub.getByRole('checkbox').check();
-    await pub.getByRole('button', { name: /Tiếp tục thanh toán/ }).click();
-    await pub.waitForURL('**/ve/**');
-    await pub.getByRole('heading', { name: 'Thanh toán lệ phí' }).waitFor();
-    tickets.push(pub.url());
+    if (both) await vdv.locator('fieldset').filter({ hasText: 'Tay trái' }).getByRole('button', { name: '-63kg' }).click();
+    await vdv.getByRole('checkbox').check();
+    await vdv.getByRole('button', { name: /Tiếp tục thanh toán/ }).click();
+    await vdv.waitForURL('**/ve/**');
+    await vdv.getByRole('heading', { name: 'Thanh toán lệ phí' }).waitFor();
+    tickets.push(vdv.url());
+    if (tickets.length === 1) {
+      await vdv.goto(`${BASE}/ve`);
+      await vdv.getByText('Giải vật tay E2E 2026').waitFor();
+      ok('"Vé của tôi" hiện vé vừa đăng ký');
+    }
   }
   await pub.goto(tickets[0]);
   await pub.getByText('250.000đ').first().waitFor();

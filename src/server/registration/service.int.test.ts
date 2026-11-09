@@ -138,3 +138,17 @@ describe('webhook SePay', () => {
     expect((await handleSepayWebhook(f.org.id, `Apikey ${key}`, body({ transferType: 'out' }))).status).toBe('ignored');
   });
 });
+
+describe('VĐV đăng nhập để đăng ký', () => {
+  it('đăng ký gắn với tài khoản → hiện trong "Vé của tôi"', async () => {
+    const { createUser } = await import('@/test/pglite-db');
+    const { listMyTickets } = await import('./service');
+    const f = await publishedTournament();
+    const vdv = await createUser('vdv@vidu.com');
+    await register(f.tournament.id, athleteInput({ categoryIds: [f.r63] }), { source: 'online', now: NOW, athleteUserId: vdv.id });
+    const mine = await listMyTickets(vdv.id);
+    expect(mine).toHaveLength(1);
+    expect(mine[0]).toMatchObject({ athleteName: 'Nguyễn Minh Khang', slug: 'ptit-2026', amountDue: 150000 });
+    expect(await listMyTickets(f.user.id)).toHaveLength(0);
+  });
+});

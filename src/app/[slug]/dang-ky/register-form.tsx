@@ -21,19 +21,23 @@ interface Cat {
 
 export function RegisterForm({
   slug,
+  initialName = '',
+  initialEmail = '',
   tournamentName,
   closed,
   categories,
   tier,
 }: {
   slug: string;
+  initialName?: string;
+  initialEmail?: string;
   tournamentName: string;
   closed: boolean;
   categories: Cat[];
   tier: { name: string; singleHandPrice: number; bothHandsPrice: number | null } | null;
 }) {
   const router = useRouter();
-  const [v, setV] = useState({ fullName: '', phone: '', email: '', birthYear: '', club: '', website: '' });
+  const [v, setV] = useState({ fullName: initialName, phone: '', email: initialEmail, birthYear: '', club: '', website: '' });
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [picked, setPicked] = useState<Partial<Record<Hand, string>>>({});
   const [consent, setConsent] = useState(false);
@@ -127,7 +131,7 @@ export function RegisterForm({
             </div>
           </div>
           <Input label="CLB / Đội (không bắt buộc)" value={v.club} onChange={set('club')} />
-          <Input label="Email (không bắt buộc, để nhận vé)" error={fields.email} value={v.email} onChange={set('email')} type="email" autoComplete="email" />
+          <Input label="Email (không bắt buộc)" error={fields.email} value={v.email} onChange={set('email')} type="email" autoComplete="email" />
           <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" value={v.website} onChange={set('website')} name="website" />
 
         </section>

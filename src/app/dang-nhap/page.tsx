@@ -17,11 +17,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <Logo />
       </Link>
       <h1 className="display text-4xl leading-none">
-        Đăng nhập <span className="text-brand-text">Ban tổ chức</span>
+        <span className="text-brand-text">Đăng nhập</span>
       </h1>
       {loi && <p className="text-sm text-brand-text">Link đăng nhập đã hết hạn hoặc không hợp lệ. Hãy gửi lại.</p>}
       <LoginForm next={safeNext} initialMode={tao ? 'signup' : 'signin'} google={await googleEnabled()} />
-      <p className="text-sm text-muted">Vận động viên không cần đăng nhập — đăng ký trực tiếp trên trang giải.</p>
+      <p className="text-sm text-muted">Dùng chung cho Ban tổ chức và vận động viên. VĐV xem lại vé tại mục “Vé của tôi”.</p>
     </main>
   );
 }

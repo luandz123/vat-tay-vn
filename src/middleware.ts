@@ -7,5 +7,5 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Chỉ khu BTC/admin cần phiên; trang giải công khai không đi qua middleware cho nhanh.
-  matcher: ['/btc/:path*', '/admin/:path*', '/auth/:path*', '/moi/:path*', '/dang-nhap'],
+  matcher: ['/btc/:path*', '/admin/:path*', '/auth/:path*', '/moi/:path*', '/dang-nhap', '/ve', '/:slug/dang-ky'],
 };

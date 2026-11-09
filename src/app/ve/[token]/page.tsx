@@ -41,7 +41,7 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
     <main className="mx-auto flex min-h-dvh max-w-md flex-col pb-10">
       <header className="flex items-center justify-between border-b border-line px-4 py-3">
         <Link href="/" aria-label="VậtTay.vn"><Logo /></Link>
-        <span className="text-xs text-muted">Lưu link này để xem lại vé</span>
+        <Link href="/ve" className="text-sm font-semibold text-brand-text">Vé của tôi</Link>
       </header>
 
       <NoticeBanner banner={banner} />

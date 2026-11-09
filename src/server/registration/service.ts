@@ -57,6 +57,8 @@ export type RegisterInput = z.input<typeof registerInput>;
 export interface RegisterOptions {
   source: 'online' | 'onsite';
   actorUserId?: string; // BTC thêm tại sân
+  /** Tài khoản của VĐV tự đăng ký online (bắt buộc đăng nhập) — gắn vào hồ sơ VĐV. */
+  athleteUserId?: string;
   now?: Date;
 }
 
@@ -90,6 +92,9 @@ export async function register(tournamentId: string, raw: unknown, opts: Registe
 
     // VĐV: nhận diện theo SĐT + tên
     const athlete = await upsertAthlete(tx, v);
+    if (opts.athleteUserId && !athlete.userId) {
+      await tx.update(athletes).set({ userId: opts.athleteUserId }).where(eq(athletes.id, athlete.id));
+    }
 
     const [existing] = await tx
       .select()
@@ -319,4 +324,27 @@ export async function applyPayment(
     after: { amountPaid, amount: p.amount },
   });
   return updated!;
+}
+
+/* ───────────── Vé của tôi (VĐV đã đăng nhập) ───────────── */
+
+export async function listMyTickets(userId: string) {
+  return db
+    .select({
+      token: registrations.ticketToken,
+      code: registrations.code,
+      status: registrations.status,
+      paymentStatus: registrations.paymentStatus,
+      amountDue: registrations.amountDue,
+      amountPaid: registrations.amountPaid,
+      athleteName: athletes.fullName,
+      tournamentName: tournaments.name,
+      slug: tournaments.slug,
+      startsAt: tournaments.startsAt,
+    })
+    .from(registrations)
+    .innerJoin(athletes, eq(athletes.id, registrations.athleteId))
+    .innerJoin(tournaments, eq(tournaments.id, registrations.tournamentId))
+    .where(and(eq(athletes.userId, userId), ne(registrations.status, 'cancelled')))
+    .orderBy(sql`${tournaments.startsAt} desc nulls last`);
 }
