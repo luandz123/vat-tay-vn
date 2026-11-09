@@ -156,7 +156,7 @@ describe('tạo giải (integration, Postgres thật trong bộ nhớ)', () => {
     await saveCategories(user.id, t.id, { categories: [{ key: 'a', kind: 'weight', hand: 'right', gender: 'male', label: '-63kg', weightMaxKg: 63 }] });
     await savePricing(user.id, t.id, { tiers: [{ key: 'x', kind: 'online', name: 'Online', singleHandPrice: 0 }] });
     await publishTournament(user.id, t.id);
-    await expect(updateInfo(user.id, t.id, { ...info, slug: 'doi-ten' })).rejects.toThrow('Không đổi được đường dẫn');
+    await expect(updateInfo(user.id, t.id, { ...info, slug: 'doi-ten' })).rejects.toThrow('Không đổi được link trang giải');
   });
 
   it('key ảnh của giải khác bị từ chối', async () => {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { saveScheduleAction } from '@/app/btc/actions';
+import { TimeSelect } from '@/components/pickers';
 import { Button, Card, Field, inputClass } from '@/components/ui';
 import { GENDER_LABEL, HAND_LABEL, type CategoryGender, type Hand } from '@/server/tournaments/templates';
 import { StepFooter, tempKey, useSaver } from './shared';
@@ -44,13 +45,19 @@ export function ScheduleStep({
   categories,
   initialSessions,
   initialPrizes,
+  tournamentDate,
 }: {
   tournamentId: string;
+  /** Ngày thi đấu "YYYY-MM-DD" (giải trong 1 ngày → phiên chỉ cần chọn giờ). */
+  tournamentDate: string;
   categories: Cat[];
   initialSessions: Session[];
   initialPrizes: Prize[];
 }) {
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
+  const [showSessions, setShowSessions] = useState(initialSessions.length > 0);
+  const hhmm = (v: string) => (v ? v.split('T')[1] ?? '' : '');
+  const at = (t: string) => (t && tournamentDate ? `${tournamentDate}T${t}` : '');
   const [assign, setAssign] = useState<Record<string, string | null>>(Object.fromEntries(categories.map((c) => [c.id, c.sessionId])));
   const [prizes, setPrizes] = useState<Prize[]>(
     initialPrizes.length
@@ -74,43 +81,55 @@ export function ScheduleStep({
       </h1>
 
       <Card
-        title="Phiên thi đấu"
-        actions={
-          sessions.length === 0 ? (
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => { addSession('Sáng', 'left'); addSession('Chiều', 'right'); }}>Sáng tay trái · chiều tay phải</Button>
-              <Button onClick={() => addSession('Cả ngày')}>Một phiên</Button>
-            </div>
-          ) : (
-            <Button onClick={() => addSession(`Phiên ${sessions.length + 1}`)}>+ Thêm phiên</Button>
-          )
-        }
+        title="Chia phiên thi đấu"
+        actions={<span className="text-sm text-muted">không bắt buộc</span>}
       >
-        {sessions.length === 0 && <p className="text-sm text-fg-2">Không bắt buộc. Dùng khi chia giờ cân và giờ thi theo từng phiên.</p>}
-        {sessions.map((s, i) => (
-          <div key={s.key} className="grid gap-3 border border-line-strong p-3 sm:grid-cols-[10rem_1fr_1fr_auto]">
-            <Field label="Tên phiên" error={fields[`sessions.${i}.name`]}>
-              <input className={cell} value={s.name} onChange={(e) => updS(s.key, { name: e.target.value })} />
-            </Field>
-            <Field label="Cân từ – đến">
-              <div className="flex gap-1">
-                <input aria-label="Cân từ" type="datetime-local" className={cell} value={s.weighInStart} onChange={(e) => updS(s.key, { weighInStart: e.target.value })} />
-                <input aria-label="Cân đến" type="datetime-local" className={cell} value={s.weighInEnd} onChange={(e) => updS(s.key, { weighInEnd: e.target.value })} />
-              </div>
-            </Field>
-            <Field label="Thi đấu từ – đến">
-              <div className="flex gap-1">
-                <input aria-label="Thi từ" type="datetime-local" className={cell} value={s.competeStart} onChange={(e) => updS(s.key, { competeStart: e.target.value })} />
-                <input aria-label="Thi đến" type="datetime-local" className={cell} value={s.competeEnd} onChange={(e) => updS(s.key, { competeEnd: e.target.value })} />
-              </div>
-            </Field>
-            <Button className="self-end" onClick={() => setSessions(sessions.filter((x) => x.key !== s.key))}>
-              Xóa
-            </Button>
+        {!showSessions ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="flex-1 text-sm text-fg-2">
+              Không cần xếp trước. Chỉ dùng khi muốn công bố giờ cân/giờ thi riêng, ví dụ sáng tay trái, chiều tay phải. Bảng đấu và bàn vẫn chạy bình thường nếu không chia phiên.
+            </p>
+            <Button onClick={() => setShowSessions(true)}>Chia phiên</Button>
           </div>
-        ))}
+        ) : (
+          <>
+            {sessions.length === 0 && (
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => { addSession('Sáng', 'left'); addSession('Chiều', 'right'); }}>Sáng tay trái · chiều tay phải</Button>
+                <Button onClick={() => addSession('Cả ngày')}>Một phiên</Button>
+                <Button onClick={() => setShowSessions(false)}>Không chia phiên</Button>
+              </div>
+            )}
+            {!tournamentDate && sessions.length > 0 && <p className="text-sm text-gold">Hãy chọn ngày thi đấu ở bước 1 để đặt giờ cho phiên.</p>}
+            {sessions.map((s, i) => (
+              <div key={s.key} className="grid gap-3 border border-line-strong p-3 sm:grid-cols-[10rem_1fr_1fr_auto]">
+                <Field label="Tên phiên" required error={fields[`sessions.${i}.name`]}>
+                  <input className={cell} value={s.name} onChange={(e) => updS(s.key, { name: e.target.value })} />
+                </Field>
+                <Field label="Giờ cân" optional>
+                  <div className="flex items-center gap-1">
+                    <TimeSelect label="Cân từ" value={hhmm(s.weighInStart)} onChange={(t) => updS(s.key, { weighInStart: at(t) })} />
+                    <span className="text-muted">–</span>
+                    <TimeSelect label="Cân đến" value={hhmm(s.weighInEnd)} onChange={(t) => updS(s.key, { weighInEnd: at(t) })} />
+                  </div>
+                </Field>
+                <Field label="Giờ thi đấu" optional>
+                  <div className="flex items-center gap-1">
+                    <TimeSelect label="Thi từ" value={hhmm(s.competeStart)} onChange={(t) => updS(s.key, { competeStart: at(t) })} />
+                    <span className="text-muted">–</span>
+                    <TimeSelect label="Thi đến" value={hhmm(s.competeEnd)} onChange={(t) => updS(s.key, { competeEnd: at(t) })} />
+                  </div>
+                </Field>
+                <Button className="self-end" onClick={() => setSessions(sessions.filter((x) => x.key !== s.key))}>
+                  Xóa
+                </Button>
+              </div>
+            ))}
+            {sessions.length > 0 && <Button className="self-start" onClick={() => addSession(`Phiên ${sessions.length + 1}`)}>+ Thêm phiên</Button>}
+          </>
+        )}
 
-        {sessions.length > 0 && categories.length > 0 && (
+        {showSessions && sessions.length > 0 && categories.length > 0 && (
           <div className="flex flex-col gap-2">
             <h3 className="font-semibold">Gán hạng mục vào phiên</h3>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

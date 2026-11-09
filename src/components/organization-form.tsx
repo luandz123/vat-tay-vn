@@ -43,20 +43,20 @@ export function OrganizationForm({ orgId, initial, redirectTo }: { orgId?: strin
       }}
     >
       <Card title="Thông tin BTC">
-        <Field label="Tên BTC / CLB *" error={fields.name}>
+        <Field label="Tên BTC / CLB" required error={fields.name}>
           <input className={inputClass} value={v.name} onChange={set('name')} placeholder="CLB Vật tay PTIT" required />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Số điện thoại" error={fields.phone}>
+          <Field label="Số điện thoại" optional error={fields.phone}>
             <input className={inputClass} value={v.phone} onChange={set('phone')} inputMode="tel" />
           </Field>
-          <Field label="Zalo (SĐT hoặc link nhóm)" error={fields.zalo}>
+          <Field label="Zalo (SĐT hoặc link nhóm)" optional error={fields.zalo}>
             <input className={inputClass} value={v.zalo} onChange={set('zalo')} />
           </Field>
-          <Field label="Facebook (link trang/nhóm)" error={fields.facebook}>
+          <Field label="Facebook (link trang/nhóm)" optional error={fields.facebook}>
             <input className={inputClass} value={v.facebook} onChange={set('facebook')} />
           </Field>
-          <Field label="TikTok" error={fields.tiktok}>
+          <Field label="TikTok" optional error={fields.tiktok}>
             <input className={inputClass} value={v.tiktok} onChange={set('tiktok')} />
           </Field>
         </div>
@@ -64,10 +64,10 @@ export function OrganizationForm({ orgId, initial, redirectTo }: { orgId?: strin
 
       <Card title="Tài khoản nhận lệ phí (VietQR)">
         <p className="text-sm text-fg-2">
-          VĐV quét mã VietQR và chuyển thẳng vào tài khoản này. VậtTay.vn không giữ tiền hộ. Có thể bỏ trống nếu giải miễn phí.
+          VĐV quét mã VietQR và chuyển thẳng vào tài khoản này. VậtTay.vn không giữ tiền hộ. Bắt buộc nếu giải có thu phí; bỏ trống nếu giải miễn phí.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Ngân hàng" error={fields.bankBin}>
+          <Field label="Ngân hàng" optional error={fields.bankBin}>
             <select className={inputClass} value={v.bankBin} onChange={set('bankBin')}>
               <option value="">— Chọn ngân hàng —</option>
               {BANKS.map((b) => (
@@ -77,10 +77,10 @@ export function OrganizationForm({ orgId, initial, redirectTo }: { orgId?: strin
               ))}
             </select>
           </Field>
-          <Field label="Số tài khoản" error={fields.bankAccountNo}>
+          <Field label="Số tài khoản" optional error={fields.bankAccountNo}>
             <input className={inputClass} value={v.bankAccountNo} onChange={set('bankAccountNo')} inputMode="numeric" />
           </Field>
-          <Field label="Tên chủ tài khoản" error={fields.bankAccountName} className="sm:col-span-2">
+          <Field label="Tên chủ tài khoản" optional error={fields.bankAccountName} className="sm:col-span-2">
             <input className={`${inputClass} uppercase`} value={v.bankAccountName} onChange={set('bankAccountName')} />
           </Field>
         </div>

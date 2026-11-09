@@ -42,3 +42,19 @@ export function codePrefixFrom(name: string, year: number): string {
   const letters = (words[0] ?? 'vt').replace(/[^a-z]/g, '').slice(0, 2).toUpperCase().padEnd(2, 'T');
   return `${letters}${String(year % 100).padStart(2, '0')}`;
 }
+
+/** Chuẩn hóa khi đang gõ link: như slugify nhưng giữ dấu "-" ở cuối để gõ tiếp được. */
+export function slugTyping(input: string): string {
+  return input
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-{2,}/g, '-')
+    .slice(0, 60);
+}
+
+/** Chốt link trước khi lưu: bỏ dấu "-" thừa ở cuối. */
+export const finalizeSlug = (s: string) => slugTyping(s).replace(/-+$/g, '');

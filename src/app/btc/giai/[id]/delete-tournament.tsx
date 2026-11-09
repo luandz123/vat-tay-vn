@@ -29,7 +29,7 @@ export function DeleteTournament({ id, impact }: { id: string; impact: { slug: s
               </>
             )}
           </Alert>
-          <Field label={`Gõ đường dẫn giải "${impact.slug}" để xác nhận`}>
+          <Field label={`Gõ link trang giải "${impact.slug}" để xác nhận`}>
             <input className={inputClass} value={confirmSlug} onChange={(e) => setConfirmSlug(e.target.value)} autoComplete="off" />
           </Field>
           {error && <Alert tone="error">{error}</Alert>}

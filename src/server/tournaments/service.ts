@@ -118,10 +118,10 @@ export async function updateInfo(userId: string, tournamentId: string, raw: unkn
   const v = infoInput.parse(raw);
 
   if (v.slug !== t.slug) {
-    if (t.status !== 'draft') throw new AppError('INVALID', 'Không đổi được đường dẫn sau khi đã xuất bản');
-    if (!isValidSlug(v.slug)) throw new AppError('INVALID', 'Đường dẫn chỉ gồm chữ thường không dấu, số và dấu gạch ngang');
+    if (t.status !== 'draft') throw new AppError('INVALID', 'Không đổi được link trang giải sau khi đã xuất bản');
+    if (!isValidSlug(v.slug)) throw new AppError('INVALID', 'Link trang giải cần 3–60 ký tự (chữ không dấu, số, dấu gạch ngang) và không trùng tên trang hệ thống');
     const clash = await db.query.tournaments.findFirst({ where: eq(tournaments.slug, v.slug), columns: { id: true } });
-    if (clash) throw new AppError('CONFLICT', 'Đường dẫn này đã có giải khác dùng');
+    if (clash) throw new AppError('CONFLICT', 'Link này đã có giải khác dùng, hãy thêm năm hoặc tên trường, ví dụ ptit-2026');
   }
 
   const contacts = {
@@ -428,7 +428,7 @@ export async function deletionImpact(userId: string, tournamentId: string) {
 export async function deleteTournament(userId: string, tournamentId: string, confirmSlug: string) {
   const t = await requireTournament(userId, tournamentId);
   await requireOrgRole(userId, t.organizationId, ['owner']);
-  if (confirmSlug.trim() !== t.slug) throw new AppError('INVALID', 'Đường dẫn xác nhận không khớp');
+  if (confirmSlug.trim() !== t.slug) throw new AppError('INVALID', 'Link xác nhận không khớp');
   await db.transaction(async (tx) => {
     // Xóa tường minh theo thứ tự phụ thuộc (trận/kết quả tham chiếu VĐV-hạng, payments không xóa dây chuyền)
     const catIds = (await tx.select({ id: categories.id }).from(categories).where(eq(categories.tournamentId, t.id))).map((c) => c.id);
